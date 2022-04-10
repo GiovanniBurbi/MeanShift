@@ -1,5 +1,6 @@
 package com.apt.project.mean_shift;
 
+import com.apt.project.mean_shift.model.Point;
 //import com.apt.project.mean_shift.utils.CSVParser;
 import com.apt.project.mean_shift.utils.ImageParser;
 
@@ -13,6 +14,11 @@ public class App
 //    	p.printPoints();
     	
     	ImageParser ip = new ImageParser("/images/image.jpg");
-    	ip.printPoints();
+//    	ip.printPoints();
+    	
+    	System.out.println("convert - " + ip.getPoints().get(ip.getPoints().size()-1));    	
+    	Point pointLuv = ip.rgb2luv(ip.getPoints().get(ip.getPoints().size() - 1));
+    	System.out.println("LUV - " + pointLuv.toString());    	
+    	System.out.println("back to rgb -" + ip.luv2rgb(pointLuv));
     }
 }
