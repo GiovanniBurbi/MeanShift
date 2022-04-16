@@ -10,6 +10,12 @@ public class Point {
 		this.y = y;
 		this.z = z;
 	}
+	
+	public void replace(Point p) {
+		this.x = p.x;
+		this.y = p.y;
+		this.z = p.z;
+	}
 
 	public double getX() {
 		return x;
@@ -37,6 +43,10 @@ public class Point {
 
 	@Override
 	public String toString() {
-		return "Point [x=" + x + ", y=" + y + ", z=" + z + "]";
+		return x + "," + y + "," + z;
+	}
+	
+	public String toCSVString() {
+		return x + "," + y + "," + z + "\n";
 	}
 }

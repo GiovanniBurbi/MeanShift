@@ -1,6 +1,7 @@
 package com.apt.project.mean_shift.utils;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -11,7 +12,8 @@ import com.apt.project.mean_shift.model.RGBPoint;
 
 
 public class ImageParser {
-	private ArrayList<RGBPoint> points = new ArrayList<>();
+//	private ArrayList<RGBPoint> rgbPoints = new ArrayList<>();
+//	private ArrayList<Point> luvPoints = new ArrayList<>();
 	private BufferedImage image;
 	
 	
@@ -21,30 +23,68 @@ public class ImageParser {
 	double ref_u = (4 * ref_x) / (ref_x + (15 * ref_y) + (3 * ref_z));
 	double ref_v = (9 * ref_y) / (ref_x + (15 * ref_y) + (3 * ref_z));
 
-	public ArrayList<RGBPoint> getPoints() {
-		return points;
-	}
+//	public ArrayList<RGBPoint> getRgbPoints() {
+//		return rgbPoints;
+//	}
+//	
+//	public ArrayList<Point> getLuvPoints() {
+//		return luvPoints;
+//	}
 	
 	public ImageParser(String path) {
+		if (path == null) return;
 		try {
 			this.image = ImageIO.read(this.getClass().getResource(path));
-			int height = image.getHeight();
-			int width = image.getWidth();
-			int[] pixel;
-			for (int i = 0; i < height; i++) {
-		    	for (int j = 0; j < width; j++) {
-		          pixel = image.getRaster().getPixel(j, i, new int[3]);
-		          this.points.add(new RGBPoint(pixel[0], pixel[1], pixel[2]));
-		        }
-		    }
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public void printPoints() {
-		this.points.forEach(p->System.out.println(p.toString()));
-//		System.out.println(this.image.getWidth() + " x " + this.image.getHeight());
+	public ArrayList<RGBPoint> extractRGBPoints() {
+		ArrayList<RGBPoint> rgbPoints = new ArrayList<>();
+		int height = image.getHeight();
+		int width = image.getWidth();
+		int[] pixel;
+		for (int i = 0; i < height; i++) {
+	    	for (int j = 0; j < width; j++) {
+	          pixel = image.getRaster().getPixel(j, i, new int[3]);
+	          rgbPoints.add(new RGBPoint(pixel[0], pixel[1], pixel[2]));
+	        }
+	    }
+		
+		return rgbPoints;
+	}
+	
+	public void renderImage(ArrayList<RGBPoint> points) {
+		BufferedImage image = new BufferedImage(100, 134, BufferedImage.TYPE_INT_RGB); 
+		for (int j = 0; j < 134; j++) {
+    		System.out.println(j);
+    		for (int i = 0; i < 100; i++) {
+    			int rgb = points.get(j*100 + i).getR();
+		        rgb = (rgb << 8) + points.get(j*100 + i).getG(); 
+		        rgb = (rgb << 8) + points.get(j*100 + i).getB();
+		        image.setRGB(i, j, rgb);
+		     }
+		}
+    	
+    	File outputFile = new File("/home/giovanni/git/mean-shift/output2.jpg");
+    	try {
+			ImageIO.write(image, "jpg", outputFile);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void printRGBPoints(ArrayList<RGBPoint> rgbPoints) {
+		rgbPoints.forEach(p->System.out.println(p.toString()));
+	}
+	
+	public void printLUVPoints(ArrayList<Point> luvPoints) {
+		luvPoints.forEach(p->System.out.println(p.toString()));
+	}
+	
+	public void printImageSize() {
+		System.out.println(this.image.getWidth() + " x " + this.image.getHeight());
 	}
 	
 	public Point rgb2luv(RGBPoint point) {
@@ -55,6 +95,18 @@ public class ImageParser {
 	public RGBPoint luv2rgb(Point point) {
 		Point pointXYZ = this.luv2xyz(point);
 		return this.xyz2rgb(pointXYZ);
+	}
+	
+	public ArrayList<Point> convertToLUVPoints(ArrayList<RGBPoint> rgbPoints) {
+		ArrayList<Point> luvPoints = new ArrayList<>();
+		rgbPoints.forEach(p -> luvPoints.add(this.rgb2luv(p)));
+		return luvPoints;
+	}
+	
+	public ArrayList<RGBPoint> convertToRGBPoints(ArrayList<Point> luvPoints) {
+		ArrayList<RGBPoint> rgbPoints = new ArrayList<>();
+		luvPoints.forEach(p -> rgbPoints.add(this.luv2rgb(p)));
+		return rgbPoints;
 	}
 	
 	private Point rgb2xyz(RGBPoint point) {

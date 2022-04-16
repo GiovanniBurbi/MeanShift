@@ -14,6 +14,10 @@ public class RGBPoint {
 	public String toString() {
 		return "RGBPoint [r=" + r + ", g=" + g + ", b=" + b + "]";
 	}
+	
+	public String toCSVString() {
+		return r + "," + g + "," + b + "\n";
+	}
 
 	public int getR() {
 		return r;
