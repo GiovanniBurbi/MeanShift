@@ -12,27 +12,16 @@ import com.apt.project.mean_shift.model.RGBPoint;
 
 
 public class ImageParser {
-//	private ArrayList<RGBPoint> rgbPoints = new ArrayList<>();
-//	private ArrayList<Point> luvPoints = new ArrayList<>();
 	private BufferedImage image;
 	
 	
-	double ref_x = 95.047;
-	double ref_y = 100.000;
-	double ref_z = 108.883;
-	double ref_u = (4 * ref_x) / (ref_x + (15 * ref_y) + (3 * ref_z));
-	double ref_v = (9 * ref_y) / (ref_x + (15 * ref_y) + (3 * ref_z));
-
-//	public ArrayList<RGBPoint> getRgbPoints() {
-//		return rgbPoints;
-//	}
-//	
-//	public ArrayList<Point> getLuvPoints() {
-//		return luvPoints;
-//	}
+	final double ref_x = 95.047;
+	final double ref_y = 100.000;
+	final double ref_z = 108.883;
+	final double ref_u = (4 * ref_x) / (ref_x + (15 * ref_y) + (3 * ref_z));
+	final double ref_v = (9 * ref_y) / (ref_x + (15 * ref_y) + (3 * ref_z));
 	
 	public ImageParser(String path) {
-		if (path == null) return;
 		try {
 			this.image = ImageIO.read(this.getClass().getResource(path));
 		} catch (IOException e) {
@@ -55,21 +44,22 @@ public class ImageParser {
 		return rgbPoints;
 	}
 	
-	public void renderImage(ArrayList<RGBPoint> points) {
-		BufferedImage image = new BufferedImage(100, 134, BufferedImage.TYPE_INT_RGB); 
-		for (int j = 0; j < 134; j++) {
-    		System.out.println(j);
-    		for (int i = 0; i < 100; i++) {
+	public void renderImage(ArrayList<RGBPoint> points, String path) {
+		int width = image.getWidth();
+		int height = image.getHeight();
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int j = 0; j < height; j++) {
+    		for (int i = 0; i < width; i++) {
     			int rgb = points.get(j*100 + i).getR();
 		        rgb = (rgb << 8) + points.get(j*100 + i).getG(); 
 		        rgb = (rgb << 8) + points.get(j*100 + i).getB();
-		        image.setRGB(i, j, rgb);
+		        outputImage.setRGB(i, j, rgb);
 		     }
 		}
-    	
-    	File outputFile = new File("/home/giovanni/git/mean-shift/output2.jpg");
+		
+    	File outputFile = new File(path);
     	try {
-			ImageIO.write(image, "jpg", outputFile);
+			ImageIO.write(outputImage, "jpg", outputFile);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
