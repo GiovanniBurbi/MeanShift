@@ -44,13 +44,13 @@ public class ImageParser {
 	
 	public void renderImage(List<Point<Integer>> points, String path) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
-		for (int j = 0; j < height; j++) {
-    		for (int i = 0; i < width; i++) {
-    			Point<Integer> point = points.get(j*width + i);
+		for (int i = 0; i < height; i++) {
+    		for (int j = 0; j < width; j++) {
+    			Point<Integer> point = points.get(i*width + j);
     			int rgb = point.getD1();
 		        rgb = (rgb << 8) + point.getD2(); 
 		        rgb = (rgb << 8) + point.getD3();
-		        outputImage.setRGB(i, j, rgb);
+		        outputImage.setRGB(j, i, rgb);
 		     }
 		}
 		

@@ -2,10 +2,12 @@ package com.apt.project.mean_shift.algorithm;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import com.apt.project.mean_shift.model.Point;
 
 public class MeanShift {
+	private static final Logger LOGGER = Logger.getLogger(MeanShift.class.getName());
 	
 	private float bandwidth;
 	private int maxIter;
@@ -48,7 +50,7 @@ public class MeanShift {
 		}
 		
 		if (scaleFactor == 0) {
-			System.out.println("Scale factor is zero!");
+			LOGGER.warning("Scale factor is zero!");
 			return null; 
 		}
 		shiftX = shiftX / scaleFactor;
@@ -58,14 +60,13 @@ public class MeanShift {
 		return new Point<>(shiftX, shiftY, shiftZ);
 	}
 	
-	public ArrayList<Point<Double>> meanShiftAlgorithm() {
-//		ArrayList<Point> shiftedPoints = new ArrayList<>(originPoints);
+	public List<Point<Double>> meanShiftAlgorithm() {
 		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>();
 		for (Point<Double> point : originPoints) {
 			shiftedPoints.add(new Point<>(point.getD1(), point.getD2(), point.getD3()));
 		}
 		for(int i = 0; i < this.maxIter; i++) {
-			System.out.println("iterazione: " + i);
+			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < shiftedPoints.size(); j++) {
 				shiftedPoints.get(j).replace(this.shiftPoint(shiftedPoints.get(j)));
 			}

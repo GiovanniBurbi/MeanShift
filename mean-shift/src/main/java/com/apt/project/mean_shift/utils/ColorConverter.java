@@ -97,9 +97,9 @@ public class ColorConverter {
 		double v = point.getD3();
 		
 		double y = (l + 16) / 116;
-		double y_pow = Math.pow(y, 3);
-		if (y_pow > 0.008856)
-			y = y_pow;
+		double powY = Math.pow(y, 3);
+		if (powY > 0.008856)
+			y = powY;
 		else
 			y = (y - (double) 16/116) / 7.787;
 		
