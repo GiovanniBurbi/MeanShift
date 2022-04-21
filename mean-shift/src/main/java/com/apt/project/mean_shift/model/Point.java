@@ -6,11 +6,11 @@ public class Point<T> {
 	private T d3;
 	
 	public Point(T d1, T d2, T d3) {
-		super();
 		this.d1 = d1;
 		this.d2 = d2;
 		this.d3 = d3;
 	}
+	
 	public T getD1() {
 		return d1;
 	}
