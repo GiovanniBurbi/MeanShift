@@ -6,20 +6,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import com.apt.project.mean_shift.model.Point;
-import com.apt.project.mean_shift.model.RGBPoint;
 
 public class CSVParser {
 	
 	private BufferedReader br;
-	private ArrayList<Point> points = new ArrayList<>();
-	private ArrayList<RGBPoint> rgbPoints = new ArrayList<>();
+	private ArrayList<Point<Double>> luvPoints = new ArrayList<>();
+	private ArrayList<Point<Integer>> rgbPoints = new ArrayList<>();
 	
-	public CSVParser() {}
-	
-	public CSVParser(String path) {		
+	public void fetchCSVFile(String path) {
 		try {
 			InputStream inputStream = this.getClass().getResourceAsStream(path);
 			InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
@@ -29,53 +28,53 @@ public class CSVParser {
 		}
 	}
 	
-	public void write(ArrayList<Point> points, String outputFile) {
+	public void write(List<Point<Double>> points, String outputFile) {
 		java.io.File resultCSV = new java.io.File(outputFile);
 		try {
 			java.io.PrintWriter outfile = new java.io.PrintWriter(resultCSV);
-			for (int i=0; i < points.size() ; i++) {
-		        outfile.write(points.get(i).toCSVString());
-		    }
+			for (Point<Double> point: points) {
+				outfile.write(point.toCSVString());
+			}
 			outfile.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public void writeRGB(ArrayList<RGBPoint> points, String outputFile) {
+	public void writeRGB(List<Point<Integer>> points, String outputFile) {
 		java.io.File resultCSV = new java.io.File(outputFile);
 		try {
 			java.io.PrintWriter outfile = new java.io.PrintWriter(resultCSV);
-			for (int i=0; i < points.size() ; i++) {
-		        outfile.write(points.get(i).toCSVString());
-		    }
+			for (Point<Integer> point: points) {
+				outfile.write(point.toCSVString());
+			}
 			outfile.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public ArrayList<Point> extractPoints() {
+	public List<Point<Double>> extractPoints() {
 		Stream<String> lines = br.lines();
 		lines.forEach(line -> {
 			String[] stringPoint = line.split(",");
 			Double[] point = Arrays.stream(stringPoint).map(Double::valueOf).toArray(Double[]::new);			
-			this.points.add(new Point(point[0], point[1], point[2]));
+			this.luvPoints.add(new Point<>(point[0], point[1], point[2]));
 		});
-		return points;
+		return this.luvPoints;
 	}
 	
-	public ArrayList<RGBPoint> extractRGBPoints() {
+	public List<Point<Integer>> extractRGBPoints() {
 		Stream<String> lines = br.lines();
 		lines.forEach(line -> {
 			String[] stringPoint = line.split(",");
 			Integer[] point = Arrays.stream(stringPoint).map(Integer::valueOf).toArray(Integer[]::new);			
-			this.getRgbPoints().add(new RGBPoint(point[0], point[1], point[2]));
+			this.rgbPoints.add(new Point<>(point[0], point[1], point[2]));
 		});
-		return getRgbPoints();
+		return this.rgbPoints;
 	}
 	
-	public ArrayList<RGBPoint> extractRGBPointsNewPath(String imgPath) {
+	public List<Point<Integer>> extractRGBPointsNewPath(String imgPath) {
 		try {
 			InputStream inputStream = this.getClass().getResourceAsStream(imgPath);
 			InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
@@ -84,28 +83,24 @@ public class CSVParser {
 			lines.forEach(line -> {
 				String[] stringPoint = line.split(",");
 				Integer[] point = Arrays.stream(stringPoint).map(Integer::valueOf).toArray(Integer[]::new);			
-				this.getRgbPoints().add(new RGBPoint(point[0], point[1], point[2]));
+				this.rgbPoints.add(new Point<>(point[0], point[1], point[2]));
 			});
-			return getRgbPoints();
+			return this.rgbPoints;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+		return Collections.emptyList();
 	}
 	
 	public void printPoints() {
-		this.points.forEach(p->System.out.println(p.toString()));
+		this.luvPoints.forEach(p->System.out.println(p.toString()));
 	}
 	
 	public void printRGBPoints() {
-		this.getRgbPoints().forEach(p->System.out.println(p.toString()));
+		this.rgbPoints.forEach(p->System.out.println(p.toString()));
 	}
 	
-	public void printPoints(ArrayList<Point> pointsList) {
+	public void printPoints(List<Point<Double>> pointsList) {
 		pointsList.forEach(p->System.out.println(p.toString()));
-	}
-
-	public ArrayList<RGBPoint> getRgbPoints() {
-		return rgbPoints;
 	}
 }
