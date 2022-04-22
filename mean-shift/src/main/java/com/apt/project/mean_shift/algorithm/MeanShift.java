@@ -9,12 +9,12 @@ import com.apt.project.mean_shift.model.Point;
 public class MeanShift {
 	private static final Logger LOGGER = Logger.getLogger(MeanShift.class.getName());
 	
-	private float bandwidth;
+	private double kernelDen;
 	private int maxIter;
 	private List<Point<Double>> originPoints;
 	
 	public MeanShift(float bandwidth, int maxIter, List<Point<Double>> originPoints) {
-		this.bandwidth = bandwidth;
+		this.kernelDen = 2 * Math.pow(bandwidth, 2);
 		this.maxIter = maxIter;
 		this.originPoints = originPoints;
 	}
@@ -27,8 +27,7 @@ public class MeanShift {
 	}
 	
 	public double kernel(double dist) {
-		double den = 2 * Math.pow(bandwidth, 2);
-		double pow = - (dist / (2 * den));
+		double pow = - (dist / (2 * kernelDen));
 		return Math.exp(pow);
 	}
 	
@@ -41,11 +40,11 @@ public class MeanShift {
 		for (Point<Double> originPoint : originPoints) {
 			double dist = this.euclideanDistancePow2(p, originPoint);
 			double weight = this.kernel(dist);
-//			numerator
+// numerator
 			shiftX += originPoint.getD1() * weight;
 			shiftY += originPoint.getD2() * weight;
 			shiftZ += originPoint.getD3() * weight;
-//			denominator
+// denominator
 			scaleFactor += weight;
 		}
 		
@@ -62,9 +61,11 @@ public class MeanShift {
 	
 	public List<Point<Double>> meanShiftAlgorithm() {
 		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>();
+// deep copy of origin points
 		for (Point<Double> point : originPoints) {
-			shiftedPoints.add(new Point<>(point.getD1(), point.getD2(), point.getD3()));
+			shiftedPoints.add(new Point<>(point));
 		}
+// algorithm main loop
 		for(int i = 0; i < this.maxIter; i++) {
 			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < shiftedPoints.size(); j++) {
