@@ -9,8 +9,8 @@ import com.apt.project.mean_shift.model.Point;
 public class MeanShift {
 	private static final Logger LOGGER = Logger.getLogger(MeanShift.class.getName());
 	
-	private double kernelDen;
-	private int maxIter;
+	private final double kernelDen;
+	private final int maxIter;
 	private List<Point<Double>> originPoints;
 	
 	public MeanShift(float bandwidth, int maxIter, List<Point<Double>> originPoints) {
@@ -60,7 +60,7 @@ public class MeanShift {
 	}
 	
 	public List<Point<Double>> meanShiftAlgorithm() {
-		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>();
+		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>(originPoints.size());
 // deep copy of origin points
 		for (Point<Double> point : originPoints) {
 			shiftedPoints.add(new Point<>(point));
@@ -74,4 +74,5 @@ public class MeanShift {
 		}
 		return shiftedPoints;
 	}
+
 }
