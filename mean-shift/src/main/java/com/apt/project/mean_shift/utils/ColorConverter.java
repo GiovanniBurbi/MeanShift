@@ -26,6 +26,14 @@ public class ColorConverter {
 		return rgbPoints;
 	}
 	
+	public static Point<Double> convertToLUVPoint(Point<Integer> point) {
+		return rgb2luv(point);
+	}
+	
+	public static Point<Integer> convertToRGBPoint(Point<Double> point) {
+		return luv2rgb(point);
+	}
+	
 	private static Point<Double> rgb2luv(Point<Integer> point) {
 		Point<Double> pointXYZ = rgb2xyz(point);
 		return xyz2luv(pointXYZ);
