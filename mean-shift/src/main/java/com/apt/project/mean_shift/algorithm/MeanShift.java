@@ -76,14 +76,16 @@ public class MeanShift {
 	}
 	
 	
-	public List<Point<Double>> meanShiftAlgorithmParallel(int tid, int chunkSize) {
-		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>(chunkSize);
+	public List<Point<Double>> meanShiftAlgorithmParallel(int startIndex, int endIndex) {
+		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>(endIndex - startIndex);
 // deep copy of origin points
-		
+		for (int i = startIndex; i < endIndex; i++) {
+			shiftedPoints.add(new Point<>(originPoints.get(i)));
+		}
 // algorithm main loop
 		for(int i = 0; i < this.maxIter; i++) {
 			LOGGER.info("iterazione: " + i);
-			for (int j = 0; j < chunkSize; j++) {
+			for (int j = 0; j < shiftedPoints.size(); j++) {
 				shiftedPoints.get(j).replace(this.shiftPoint(shiftedPoints.get(j)));
 			}
 		}

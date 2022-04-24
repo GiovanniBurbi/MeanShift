@@ -3,10 +3,8 @@ package com.apt.project.mean_shift;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +19,7 @@ public class App
 {
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 	private static final int ITER = 1;
-	private static final int N_THREAD = 2;
+	private static final int N_THREAD = 3;
 
 	public static void main( String[] args )
     {
@@ -72,7 +70,10 @@ public class App
     	List<Point<Integer>> rgbPoints = ip.extractRGBPoints();
     	List<Point<Double>> luvPoints = ColorConverter.convertToLUVPoints(rgbPoints);
     	MeanShift meanShift = new MeanShift(12f, 5, luvPoints);
-    	List<Point<Double>> shiftedPoints = new ArrayList<>(luvPoints.size());
+    	List<Point<Double>> shiftedPoints = new ArrayList<>();
+    	for (int i = 0; i < luvPoints.size(); i++) {
+    		shiftedPoints.add(new Point<>(0.0, 0.0, 0.0));
+    	}
     	long startTime;
     	long endTime;
     	long allTimes = 0;
@@ -81,7 +82,7 @@ public class App
     	int numberOfElements = luvPoints.size();
     	int minElementsPerThread = numberOfElements / N_THREAD;
     	int threadsWithMaxElements = numberOfElements - N_THREAD * minElementsPerThread;
-    	int startIndex = 0;
+    	int startIndex;
     	int nElements;
     	int endIndex;
 //    	List<Future<?>> futures = new ArrayList<Future<?>>(N_THREAD);
@@ -109,13 +110,14 @@ public class App
 //			}
     	
     	CountDownLatch latch = new CountDownLatch(N_THREAD);
+
     	for (int k = 0; k < ITER; k++) {
+    		startIndex = 0;
     		startTime = System.currentTimeMillis();
 			for (int i = 0; i < N_THREAD; i++) {
-// TODO do these operation (and line 78) inside thread
 				nElements = (i < threadsWithMaxElements) ? minElementsPerThread + 1 : minElementsPerThread;
 				endIndex = startIndex + nElements;
-				executor.execute(new MeanShiftThread(latch));
+				executor.execute(new MeanShiftThread(latch, startIndex, endIndex, meanShift, shiftedPoints));
 				startIndex = endIndex;
 			}
 			
