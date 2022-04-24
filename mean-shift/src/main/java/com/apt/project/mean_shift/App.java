@@ -10,8 +10,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.apt.project.mean_shift.algorithm.MeanShift;
+import com.apt.project.mean_shift.algorithm.parallel.MeanShiftThread;
 import com.apt.project.mean_shift.model.Point;
-import com.apt.project.mean_shift.parallel.MeanShiftThread;
 import com.apt.project.mean_shift.utils.ColorConverter;
 import com.apt.project.mean_shift.utils.ImageParser;
 
@@ -19,127 +19,155 @@ public class App
 {
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 	private static final int ITER = 1;
-	private static final int N_THREAD = 3;
+	private static final int N_THREAD = 2;
+	private static final float BANDWIDTH = 12f;
+//	private static final float BANDWIDTH_CSV = 2f;
+	private static final int ALGORITHM_ITER = 5;
 
+	
 	public static void main( String[] args )
     {
     	
-//    	Sequential version
-    	
-    	
 //    	For images
-    	
-//    	CSVParser p = new CSVParser();
-//    	ImageParser ip = new ImageParser("/images/benzina.jpg");
-//    	List<Point<Integer>> rgbPoints = ip.extractRGBPoints();
-//    	List<Point<Double>> luvPoints = ColorConverter.convertToLUVPoints(rgbPoints);
-//    	p.write(luvPoints, "originPoints.csv");
-//    	MeanShift meanShift = new MeanShift(12f, 5, luvPoints);
-//    	long startTime;
-//    	long endTime;
-//    	long allTimes = 0;
-//    	for (int i = 0; i < ITER - 1; i++) {
-//    		startTime = System.currentTimeMillis();
-//    		meanShift.meanShiftAlgorithm();
-//    		endTime = System.currentTimeMillis();
-//    		allTimes += endTime - startTime;
-//    	}
-//    	startTime = System.currentTimeMillis();
-//    	List<Point<Double>> shiftedPoints = meanShift.meanShiftAlgorithm();
-//		endTime = System.currentTimeMillis();
-//		allTimes += endTime - startTime;
-//    	LOGGER.info("Sequential version took " + (allTimes / ITER) + " milliseconds");
-//    	p.write(shiftedPoints, "shiftedPoints.csv");
-//    	List<Point<Integer>> rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
-//    	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5.jpg");
-    	
-    	
-//    	For csv files
-    	
-//    	CSVParser p = new CSVParser();
-//    	p.fetchCSVFile("/points/100.csv");
-//    	List<Point<Double>> points = p.extractPoints();
-//    	MeanShift meanShift = new MeanShift(2, 10, points);
-//    	List<Point<Double>> shiftedPoints = meanShift.meanShiftAlgorithm();
-//    	p.write(shiftedPoints, "shiftedPoints.csv");
-    	
-    	
-//    	Parallel version
-    	
-    	ImageParser ip = new ImageParser("/images/benzina.jpg");
+		
+		ImageParser ip = new ImageParser("/images/benzina.jpg");
     	List<Point<Integer>> rgbPoints = ip.extractRGBPoints();
     	List<Point<Double>> luvPoints = ColorConverter.convertToLUVPoints(rgbPoints);
-    	MeanShift meanShift = new MeanShift(12f, 5, luvPoints);
-    	List<Point<Double>> shiftedPoints = new ArrayList<>();
-    	for (int i = 0; i < luvPoints.size(); i++) {
-    		shiftedPoints.add(new Point<>(0.0, 0.0, 0.0));
-    	}
-    	long startTime;
-    	long endTime;
+    	List<Point<Double>> shiftedPoints = null;
+    	List<Point<Integer>> rgbShiftedPoints = null;
     	long allTimes = 0;
-
-    	ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
-    	int numberOfElements = luvPoints.size();
-    	int minElementsPerThread = numberOfElements / N_THREAD;
-    	int threadsWithMaxElements = numberOfElements - N_THREAD * minElementsPerThread;
-    	int startIndex;
-    	int nElements;
-    	int endIndex;
-//    	List<Future<?>> futures = new ArrayList<Future<?>>(N_THREAD);
-//    	
-//    	for (int k = 0; k < ITER; k++) {
-//    		startTime = System.currentTimeMillis();
-//			for (int i = 0; i < N_THREAD; i++) {
-				// TODO do these operation (and line 78) inside thread
-//				nElements = (i < threadsWithMaxElements) ? minElementsPerThread + 1 : minElementsPerThread;
-//				endIndex = startIndex + nElements;
-//				futures.add(executor.submit(new MeanShiftThread()));
-//				startIndex = endIndex;
-//			}
-//			
-//			for (int i = 0; i < futures.size(); i++) {
-//				try {
-//					futures.get(i).get();
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				} catch (ExecutionException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
     	
-    	CountDownLatch latch = new CountDownLatch(N_THREAD);
+    	
+//    	Sequential version
+    	
+    	MeanShift meanShift = new MeanShift(BANDWIDTH, ALGORITHM_ITER, luvPoints);
+    	for (int i = 0; i < ITER; i++) {
+    		long startTime = System.currentTimeMillis();
+    		shiftedPoints = meanShift.meanShiftAlgorithm();
+    		long endTime = System.currentTimeMillis();
+    		allTimes += endTime - startTime;
+    	}
+    	LOGGER.info("Sequential version took " + (allTimes / ITER) + " milliseconds");
+    	rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
+    	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5.jpg");
+		
+		
+//		Parallel version
+		
+    	
+    	allTimes = 0;
 
     	for (int k = 0; k < ITER; k++) {
-    		startIndex = 0;
-    		startTime = System.currentTimeMillis();
+    		long startTime = System.currentTimeMillis();
+    		ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
+        	CountDownLatch latch = new CountDownLatch(N_THREAD);
+
+    		shiftedPoints = new ArrayList<>();
+    		for (int i = 0; i < luvPoints.size(); i++) {
+        		shiftedPoints.add(new Point<>(0.0, 0.0, 0.0));
+        	}
+    		
 			for (int i = 0; i < N_THREAD; i++) {
-				nElements = (i < threadsWithMaxElements) ? minElementsPerThread + 1 : minElementsPerThread;
-				endIndex = startIndex + nElements;
-				executor.execute(new MeanShiftThread(latch, startIndex, endIndex, meanShift, shiftedPoints));
-				startIndex = endIndex;
+				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, shiftedPoints, latch));
 			}
 			
 			try {
 				latch.await();
 			} catch (InterruptedException e) {
 				LOGGER.log(Level.WARNING, e.getMessage(), e);
+				Thread.currentThread().interrupt();
 			}
 			
-			endTime = System.currentTimeMillis();
+			executor.shutdown();
+			try {
+			    if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+			    	LOGGER.info("Executor timeout up, now forcing the shutdown..");
+			        executor.shutdownNow();
+			    } 
+			} catch (InterruptedException e) {
+				LOGGER.info("Executor shutdown exception, now forcing the shutdown..");
+			    executor.shutdownNow();
+			    Thread.currentThread().interrupt();
+			}
+
+			long endTime = System.currentTimeMillis();
 			allTimes += endTime - startTime;
     	}
-		executor.shutdown();
-		try {
-		    if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
-		        executor.shutdownNow();
-		    } 
-		} catch (InterruptedException e) {
-		    executor.shutdownNow();
-		}
+
     	LOGGER.info("Parallel version took " + (allTimes / ITER) + " milliseconds");
-    	List<Point<Integer>> rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
+    	rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
     	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5Parallel.jpg");
+    	
+    	
+    	
+    	
+//    	For csv files
+    	
+//		CSVParser p = new CSVParser();
+//    	p.fetchCSVFile("/points/10000.csv");
+//    	List<Point<Double>> points = p.extractPoints();    	
+//    	List<Point<Double>> shiftedPoints = null;
+//    	long allTimes = 0;
+    	
+    	
+    	
+//    	Sequential version
+    	
+
+//    	MeanShift meanShift = new MeanShift(BANDWIDTH_CSV, ALGORITHM_ITER, points);
+//    	for (int i = 0; i < ITER; i++) {
+//    		long startTime = System.currentTimeMillis();
+//    		shiftedPoints = meanShift.meanShiftAlgorithm();
+//    		long endTime = System.currentTimeMillis();
+//    		allTimes += endTime - startTime;
+//    	}
+//    	LOGGER.info("Sequential version took " + (allTimes / ITER) + " milliseconds");
+//    	p.write(shiftedPoints, "shiftedPoints.csv");
+    	
+    	
+//    	Parallel version
+    	
+    	
+//    	allTimes = 0;//
+//    	for (int k = 0; k < ITER; k++) {
+//    		long startTime = System.currentTimeMillis();
+//    		ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
+//        	CountDownLatch latch = new CountDownLatch(N_THREAD);
+//
+//    		shiftedPoints = new ArrayList<>();
+//    		for (int i = 0; i < points.size(); i++) {
+//        		shiftedPoints.add(new Point<>(0.0, 0.0, 0.0));
+//        	}
+//    		
+//			for (int i = 0; i < N_THREAD; i++) {
+//				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH_CSV, points, shiftedPoints, latch));
+//			}
+//			
+//			try {
+//				latch.await();
+//			} catch (InterruptedException e) {
+//				LOGGER.log(Level.WARNING, e.getMessage(), e);
+//				Thread.currentThread().interrupt();
+//			}
+//			
+//			executor.shutdown();
+//			try {
+//			    if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+//			    	LOGGER.info("Executor timeout up, now forcing the shutdown..");
+//			        executor.shutdownNow();
+//			    } 
+//			} catch (InterruptedException e) {
+//				LOGGER.info("Executor shutdown exception, now forcing the shutdown..");
+//			    executor.shutdownNow();
+//			    Thread.currentThread().interrupt();
+//			}
+//
+//			long endTime = System.currentTimeMillis();
+//			allTimes += endTime - startTime;
+//    	}
+//
+//    	LOGGER.info("Parallel version took " + (allTimes / ITER) + " milliseconds");
+//    	p.write(shiftedPoints, "shiftedPoints.csv");    	
     }
+	
 }
