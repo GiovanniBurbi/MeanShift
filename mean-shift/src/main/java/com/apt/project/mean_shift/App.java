@@ -58,8 +58,10 @@ public class App
 
     	for (int k = 0; k < ITER; k++) {
     		long startTime = System.currentTimeMillis();
+    		
     		ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
         	CountDownLatch latch = new CountDownLatch(N_THREAD);
+//    		TODO: Threads to extract rgb values from image and convert this list of rgb values to luv values
 
     		rgbShiftedPoints = new ArrayList<>();
     		for (int i = 0; i < luvPoints.size(); i++) {
@@ -94,6 +96,8 @@ public class App
     	}
 
     	LOGGER.info("Parallel version took " + (allTimes / ITER) + " milliseconds");
+//		TODO: Threads to render image from list of rgb values
+
     	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5Parallel.jpg");
     	
     	
