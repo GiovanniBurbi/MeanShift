@@ -6,6 +6,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 
 import com.apt.project.mean_shift.model.Point;
+import com.apt.project.mean_shift.utils.ColorConverter;
 
 public class MeanShiftThread implements Runnable{
 	
@@ -16,12 +17,12 @@ public class MeanShiftThread implements Runnable{
 	private int maxIter;
 	private double kernelDen;
 	private List<Point<Double>> originPoints;
-	private List<Point<Double>> finalPoints;
+	private List<Point<Integer>> finalPoints;
 	private CountDownLatch latch;
 	
 	
 	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
-			List<Point<Double>> finalPoints, CountDownLatch latch) {
+			List<Point<Integer>> finalPoints, CountDownLatch latch) {
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.maxIter = maxIter;
@@ -101,7 +102,7 @@ public class MeanShiftThread implements Runnable{
 		}
 				
 		for (int i = startChunk; i < endChunk; i++) {
-			finalPoints.get(i).replace(shiftedPoints.get(i-startChunk));
+			finalPoints.get(i).replace(ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
 		}
 		latch.countDown();
 		

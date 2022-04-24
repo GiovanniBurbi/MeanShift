@@ -33,7 +33,6 @@ public class App
 		ImageParser ip = new ImageParser("/images/benzina.jpg");
     	List<Point<Integer>> rgbPoints = ip.extractRGBPoints();
     	List<Point<Double>> luvPoints = ColorConverter.convertToLUVPoints(rgbPoints);
-    	List<Point<Double>> shiftedPoints = null;
     	List<Point<Integer>> rgbShiftedPoints = null;
     	long allTimes = 0;
     	
@@ -43,12 +42,12 @@ public class App
     	MeanShift meanShift = new MeanShift(BANDWIDTH, ALGORITHM_ITER, luvPoints);
     	for (int i = 0; i < ITER; i++) {
     		long startTime = System.currentTimeMillis();
-    		shiftedPoints = meanShift.meanShiftAlgorithm();
+    		List<Point<Double>> shiftedPoints = meanShift.meanShiftAlgorithm();
+    		rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
     		long endTime = System.currentTimeMillis();
     		allTimes += endTime - startTime;
     	}
     	LOGGER.info("Sequential version took " + (allTimes / ITER) + " milliseconds");
-    	rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
     	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5.jpg");
 		
 		
@@ -62,13 +61,13 @@ public class App
     		ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
         	CountDownLatch latch = new CountDownLatch(N_THREAD);
 
-    		shiftedPoints = new ArrayList<>();
+    		rgbShiftedPoints = new ArrayList<>();
     		for (int i = 0; i < luvPoints.size(); i++) {
-        		shiftedPoints.add(new Point<>(0.0, 0.0, 0.0));
+        		rgbShiftedPoints.add(new Point<>(0, 0, 0));
         	}
     		
 			for (int i = 0; i < N_THREAD; i++) {
-				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, shiftedPoints, latch));
+				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, rgbShiftedPoints, latch));
 			}
 			
 			try {
@@ -81,11 +80,11 @@ public class App
 			executor.shutdown();
 			try {
 			    if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-			    	LOGGER.info("Executor timeout up, now forcing the shutdown..");
+			    	LOGGER.info("Executor timeout up, now forcing the shutdown...");
 			        executor.shutdownNow();
 			    } 
 			} catch (InterruptedException e) {
-				LOGGER.info("Executor shutdown exception, now forcing the shutdown..");
+				LOGGER.info("Executor shutdown exception, now forcing the shutdown...");
 			    executor.shutdownNow();
 			    Thread.currentThread().interrupt();
 			}
@@ -95,7 +94,6 @@ public class App
     	}
 
     	LOGGER.info("Parallel version took " + (allTimes / ITER) + " milliseconds");
-    	rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
     	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5Parallel.jpg");
     	
     	
