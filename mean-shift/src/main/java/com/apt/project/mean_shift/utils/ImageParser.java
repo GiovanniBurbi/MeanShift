@@ -33,9 +33,9 @@ public class ImageParser {
 	public List<Point<Integer>> extractRGBPoints() {
 		ArrayList<Point<Integer>> rgbPoints = new ArrayList<>();
 		int[] pixel;
-		for (int i = 0; i < height; i++) {
-	    	for (int j = 0; j < width; j++) {
-	          pixel = image.getRaster().getPixel(j, i, new int[3]);
+		for (int i = 0; i < width; i++) {
+	    	for (int j = 0; j < height; j++) {
+	          pixel = image.getRaster().getPixel(i, j, new int[3]);
 	          rgbPoints.add(new Point<>(pixel[0], pixel[1], pixel[2]));
 	        }
 	    }
@@ -44,13 +44,13 @@ public class ImageParser {
 	
 	public void renderImage(List<Point<Integer>> points, String path) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
-		for (int i = 0; i < height; i++) {
-    		for (int j = 0; j < width; j++) {
-    			Point<Integer> point = points.get(i*width + j);
+		for (int i = 0; i < width; i++) {
+    		for (int j = 0; j < height; j++) {
+    			Point<Integer> point = points.get(i*height + j);
     			int rgb = point.getD1();
 		        rgb = (rgb << 8) + point.getD2(); 
 		        rgb = (rgb << 8) + point.getD3();
-		        outputImage.setRGB(j, i, rgb);
+		        outputImage.setRGB(i, j, rgb);
 		     }
 		}
 		
