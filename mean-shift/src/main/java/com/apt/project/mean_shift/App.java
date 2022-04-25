@@ -19,7 +19,7 @@ public class App
 {
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 	private static final int ITER = 1;
-	private static final int N_THREAD = 2;
+	private static final int N_THREAD = 4;
 	private static final float BANDWIDTH = 12f;
 //	private static final float BANDWIDTH_CSV = 2f;
 	private static final int ALGORITHM_ITER = 5;
@@ -30,11 +30,12 @@ public class App
     	
 //    	For images
 		
-		ImageParser ip = new ImageParser("/images/benzina.jpg");
+		ImageParser ip = new ImageParser("/images/benzina200x150.jpg");
     	List<Point<Integer>> rgbPoints = ip.extractRGBPoints();
     	List<Point<Double>> luvPoints = ColorConverter.convertToLUVPoints(rgbPoints);
     	List<Point<Integer>> rgbShiftedPoints = null;
     	long allTimes = 0;
+    	
     	
     	
 //    	Sequential version
@@ -54,13 +55,14 @@ public class App
 //		Parallel version
 		
     	
-    	allTimes = 0;
-
+//    	allTimes = 0;
+//
     	for (int k = 0; k < ITER; k++) {
     		long startTime = System.currentTimeMillis();
     		
     		ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
         	CountDownLatch latch = new CountDownLatch(N_THREAD);
+    	
 //    		TODO: Threads to extract rgb values from image and convert this list of rgb values to luv values
 
     		rgbShiftedPoints = new ArrayList<>();
@@ -96,6 +98,7 @@ public class App
     	}
 
     	LOGGER.info("Parallel version took " + (allTimes / ITER) + " milliseconds");
+    	
 //		TODO: Threads to render image from list of rgb values
 
     	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5Parallel.jpg");

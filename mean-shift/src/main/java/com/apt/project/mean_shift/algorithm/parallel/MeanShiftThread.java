@@ -94,10 +94,12 @@ public class MeanShiftThread implements Runnable{
 			shiftedPoints.add(new Point<>(originPoints.get(i)));
 		}
 //		algorithm main loop
+		
 		for (int i = 0; i < this.maxIter; i++) {
-			LOGGER.info("iterazione: " + i);
+//			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < chunkSize; j++) {
-				shiftedPoints.get(j).replace(this.shiftPoint(shiftedPoints.get(j)));
+				Point<Double> point = shiftedPoints.get(j);
+				point.replace(this.shiftPoint(point));
 			}
 		}
 				
