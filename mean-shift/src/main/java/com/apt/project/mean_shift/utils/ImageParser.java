@@ -31,6 +31,10 @@ public class ImageParser {
 		}
 	}
 	
+	public Raster getRaster() {
+		return image.getRaster();
+	}
+	
 	public List<Point<Integer>> extractRGBPoints() {
 		ArrayList<Point<Integer>> rgbPoints = new ArrayList<>();
 		int[] pixel;
@@ -43,6 +47,20 @@ public class ImageParser {
 	    }
 		
 		return rgbPoints;
+	}
+	
+	public List<Point<Double>> extractLUVPoints() {
+		ArrayList<Point<Double>> luvPoints = new ArrayList<>();
+		int[] pixel;
+		Raster raster = image.getRaster();
+		for (int i = 0; i < height; i++) {
+	    	for (int j = 0; j < width; j++) {
+	          pixel = raster.getPixel(j, i, new int[3]);
+	          luvPoints.add(ColorConverter.convertToLUVPoint(new Point<>(pixel[0], pixel[1], pixel[2])));
+	        }
+	    }
+		
+		return luvPoints;
 	}
 	
 	
@@ -61,6 +79,57 @@ public class ImageParser {
     	File outputFile = new File(path);
     	try {
 			ImageIO.write(outputImage, "jpg", outputFile);
+		} catch (IOException e) {
+			LOGGER.log(Level.WARNING, e.getMessage(), e);
+		}
+	}
+	
+	public void renderImageOneLoop(List<Point<Integer>> points, String path) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < width*height; i++) {
+			Point<Integer> point = points.get(i);
+			int rgb = point.getD1();
+	        rgb = (rgb << 8) + point.getD2(); 
+	        rgb = (rgb << 8) + point.getD3();
+	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+		
+    	File outputFile = new File(path);
+    	try {
+			ImageIO.write(outputImage, "jpg", outputFile);
+		} catch (IOException e) {
+			LOGGER.log(Level.WARNING, e.getMessage(), e);
+		}
+	}
+	
+	public void renderImageWithoutWrite(List<Point<Integer>> points) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < height; i++) {
+    		for (int j = 0; j < width; j++) {
+    			Point<Integer> point = points.get(i*width + j);
+    			int rgb = point.getD1();
+		        rgb = (rgb << 8) + point.getD2(); 
+		        rgb = (rgb << 8) + point.getD3();
+		        outputImage.setRGB(j, i, rgb);
+		     }
+		}
+	}
+	
+	public void renderImageWithoutWriteOneLoop(List<Point<Integer>> points) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < width*height; i++) {
+			Point<Integer> point = points.get(i);
+			int rgb = point.getD1();
+	        rgb = (rgb << 8) + point.getD2(); 
+	        rgb = (rgb << 8) + point.getD3();
+	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+	}
+	
+	public void write(BufferedImage image, String path) {
+		File outputFile = new File(path);
+    	try {
+			ImageIO.write(image, "jpg", outputFile);
 		} catch (IOException e) {
 			LOGGER.log(Level.WARNING, e.getMessage(), e);
 		}

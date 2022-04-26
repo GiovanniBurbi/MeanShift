@@ -1,24 +1,27 @@
 package com.apt.project.mean_shift;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.Raster;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.apt.project.mean_shift.algorithm.MeanShift;
 import com.apt.project.mean_shift.algorithm.parallel.MeanShiftThread;
 import com.apt.project.mean_shift.model.Point;
-import com.apt.project.mean_shift.utils.ColorConverter;
 import com.apt.project.mean_shift.utils.ImageParser;
+import com.apt.project.mean_shift.utils.parallel.ImageRenderThread;
+import com.apt.project.mean_shift.utils.parallel.PixelsExtractionThread;
 
 public class App 
 {
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-	private static final int ITER = 1;
+	private static final int ITER = 4;
 	private static final int N_THREAD = 4;
 	private static final float BANDWIDTH = 12f;
 //	private static final float BANDWIDTH_CSV = 2f;
@@ -31,48 +34,90 @@ public class App
 //    	For images
 		
 		ImageParser ip = new ImageParser("/images/benzina200x150.jpg");
-    	List<Point<Integer>> rgbPoints = ip.extractRGBPoints();
-    	List<Point<Double>> luvPoints = ColorConverter.convertToLUVPoints(rgbPoints);
+		List<Point<Double>> luvPoints = null;
     	List<Point<Integer>> rgbShiftedPoints = null;
+    	
+//    	BufferedImage resultImage = null;
+
     	long allTimes = 0;
     	
-    	
+//    	List<Point<Integer>> rgbPoints = ip.extractRGBPoints();
     	
 //    	Sequential version
     	
-    	MeanShift meanShift = new MeanShift(BANDWIDTH, ALGORITHM_ITER, luvPoints);
-    	for (int i = 0; i < ITER; i++) {
-    		long startTime = System.currentTimeMillis();
-    		List<Point<Double>> shiftedPoints = meanShift.meanShiftAlgorithm();
-    		rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
-    		long endTime = System.currentTimeMillis();
-    		allTimes += endTime - startTime;
-    	}
-    	LOGGER.info("Sequential version took " + (allTimes / ITER) + " milliseconds");
-    	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5.jpg");
+    	
+//    	for (int i = 0; i < ITER; i++) {
+//    		long startTime = System.currentTimeMillis();
+//    		luvPoints = ip.extractLUVPoints();
+//    		MeanShift meanShift = new MeanShift(BANDWIDTH, ALGORITHM_ITER, luvPoints);
+//    		List<Point<Double>> shiftedPoints = meanShift.meanShiftAlgorithm();
+//    		rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
+    		
+//    		ip.renderImageWithoutWriteOneLoop(rgbShiftedPoints);
+//    		ip.renderImageWithoutWriteOneLoop(rgbPoints);
+//    	
+//    		long endTime = System.currentTimeMillis();
+//    		allTimes += endTime - startTime;
+//    	}
+//
+//    	LOGGER.info("Sequential version took " + (allTimes / ITER) + " milliseconds");
+
+//    	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5.jpg");
 		
 		
 //		Parallel version
-		
     	
 //    	allTimes = 0;
-//
+//    	
     	for (int k = 0; k < ITER; k++) {
     		long startTime = System.currentTimeMillis();
     		
-    		ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
-        	CountDownLatch latch = new CountDownLatch(N_THREAD);
-    	
-//    		TODO: Threads to extract rgb values from image and convert this list of rgb values to luv values
+    		
 
-    		rgbShiftedPoints = new ArrayList<>();
-    		for (int i = 0; i < luvPoints.size(); i++) {
+//        	CountDownLatch latchRender = new CountDownLatch(N_THREAD);
+    	
+    	
+        	CountDownLatch latch = new CountDownLatch(N_THREAD);
+    		CountDownLatch latchExtraction = new CountDownLatch(N_THREAD);
+//    		Phaser ph = new Phaser(1);
+    		ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
+    		
+//    		luvPoints = ip.extractLUVPoints();
+//    		rgbShiftedPoints = new ArrayList<>();
+//    		for (int i = 0; i < luvPoints.size(); i++) {
+//    			rgbShiftedPoints.add(new Point<>(0, 0, 0));
+//    		}
+    		
+        	Raster raster = ip.getRaster();
+
+        	rgbShiftedPoints = new ArrayList<>();
+        	luvPoints = new ArrayList<>();
+        	for (int i = 0; i < raster.getHeight() * raster.getWidth(); i++) {
+        		luvPoints.add(new Point<>(0.0, 0.0, 0.0));
         		rgbShiftedPoints.add(new Point<>(0, 0, 0));
         	}
+        	
+        	for (int i = 0; i < N_THREAD; i++) {
+				executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPoints, latchExtraction));
+//        		executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPoints, ph));
+			}
+			
+//        	ph.arriveAndAwaitAdvance();
+        	
+			try {
+				latchExtraction.await();
+			} catch (InterruptedException e) {
+				LOGGER.log(Level.WARNING, e.getMessage(), e);
+				Thread.currentThread().interrupt();
+			}
     		
 			for (int i = 0; i < N_THREAD; i++) {
 				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, rgbShiftedPoints, latch));
+//				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, rgbShiftedPoints, ph));
 			}
+			
+//			ph.arriveAndAwaitAdvance();
+//			ph.arriveAndDeregister();
 			
 			try {
 				latch.await();
@@ -80,6 +125,23 @@ public class App
 				LOGGER.log(Level.WARNING, e.getMessage(), e);
 				Thread.currentThread().interrupt();
 			}
+			
+			
+//			resultImage = new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
+//			
+//			for (int i = 0; i < N_THREAD; i++) {
+//				executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, rgbShiftedPoints, latchRender));
+//			}
+//			
+//			try {
+//				latchRender.await();
+//			} catch (InterruptedException e) {
+//				LOGGER.log(Level.WARNING, e.getMessage(), e);
+//				Thread.currentThread().interrupt();
+//			}
+//			
+//			ip.write(resultImage, "results/prova.jpg");
+
 			
 			executor.shutdown();
 			try {
@@ -96,11 +158,9 @@ public class App
 			long endTime = System.currentTimeMillis();
 			allTimes += endTime - startTime;
     	}
-
+    	
     	LOGGER.info("Parallel version took " + (allTimes / ITER) + " milliseconds");
     	
-//		TODO: Threads to render image from list of rgb values
-
     	ip.renderImage(rgbShiftedPoints, "results/resultBenzinaBW12Iter5Parallel.jpg");
     	
     	

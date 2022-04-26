@@ -3,6 +3,7 @@ package com.apt.project.mean_shift.algorithm.parallel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Phaser;
 import java.util.logging.Logger;
 
 import com.apt.project.mean_shift.model.Point;
@@ -19,6 +20,7 @@ public class MeanShiftThread implements Runnable{
 	private List<Point<Double>> originPoints;
 	private List<Point<Integer>> finalPoints;
 	private CountDownLatch latch;
+	private Phaser ph;
 	
 	
 	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
@@ -32,6 +34,18 @@ public class MeanShiftThread implements Runnable{
 		this.latch = latch;
 	}
 	
+	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
+			List<Point<Integer>> finalPoints, Phaser ph) {
+		this.tid = tid;
+		this.nThreads = nThreads;
+		this.maxIter = maxIter;
+		this.kernelDen = 2 * Math.pow(bandwidth, 2);
+		this.originPoints = originPoints;
+		this.finalPoints = finalPoints;
+		this.ph = ph;
+		ph.register();
+	}
+		
 	public double euclideanDistancePow2(Point<Double> shiftPoint, Point<Double> originPoint) {
 		double distX = Math.pow(shiftPoint.getD1() - originPoint.getD1(), 2);
 		double distY = Math.pow(shiftPoint.getD2() - originPoint.getD2(), 2);
@@ -96,7 +110,7 @@ public class MeanShiftThread implements Runnable{
 //		algorithm main loop
 		
 		for (int i = 0; i < this.maxIter; i++) {
-//			LOGGER.info("iterazione: " + i);
+			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < chunkSize; j++) {
 				Point<Double> point = shiftedPoints.get(j);
 				point.replace(this.shiftPoint(point));
@@ -107,6 +121,8 @@ public class MeanShiftThread implements Runnable{
 			finalPoints.get(i).replace(ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
 		}
 		latch.countDown();
+		
+//		ph.arriveAndDeregister();
 		
 	}
 
