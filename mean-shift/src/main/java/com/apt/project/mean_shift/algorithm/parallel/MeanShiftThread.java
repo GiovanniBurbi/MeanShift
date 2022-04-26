@@ -2,7 +2,6 @@ package com.apt.project.mean_shift.algorithm.parallel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
 import java.util.logging.Logger;
 
@@ -19,20 +18,7 @@ public class MeanShiftThread implements Runnable{
 	private double kernelDen;
 	private List<Point<Double>> originPoints;
 	private List<Point<Integer>> finalPoints;
-	private CountDownLatch latch;
 	private Phaser ph;
-	
-	
-	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
-			List<Point<Integer>> finalPoints, CountDownLatch latch) {
-		this.tid = tid;
-		this.nThreads = nThreads;
-		this.maxIter = maxIter;
-		this.kernelDen = 2 * Math.pow(bandwidth, 2);
-		this.originPoints = originPoints;
-		this.finalPoints = finalPoints;
-		this.latch = latch;
-	}
 	
 	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
 			List<Point<Integer>> finalPoints, Phaser ph) {
@@ -120,10 +106,8 @@ public class MeanShiftThread implements Runnable{
 		for (int i = startChunk; i < endChunk; i++) {
 			finalPoints.get(i).replace(ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
 		}
-		latch.countDown();
 		
-//		ph.arriveAndDeregister();
-		
+		ph.arriveAndDeregister();
 	}
 
 }

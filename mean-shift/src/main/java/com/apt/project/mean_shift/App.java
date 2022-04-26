@@ -71,15 +71,8 @@ public class App
 //    	
     	for (int k = 0; k < ITER; k++) {
     		long startTime = System.currentTimeMillis();
-    		
-    		
-
-//        	CountDownLatch latchRender = new CountDownLatch(N_THREAD);
-    	
-    	
-        	CountDownLatch latch = new CountDownLatch(N_THREAD);
-    		CountDownLatch latchExtraction = new CountDownLatch(N_THREAD);
-//    		Phaser ph = new Phaser(1);
+    		    	
+    		Phaser ph = new Phaser(1);
     		ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
     		
 //    		luvPoints = ip.extractLUVPoints();
@@ -98,51 +91,28 @@ public class App
         	}
         	
         	for (int i = 0; i < N_THREAD; i++) {
-				executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPoints, latchExtraction));
-//        		executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPoints, ph));
+        		executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPoints, ph));
 			}
 			
-//        	ph.arriveAndAwaitAdvance();
-        	
-			try {
-				latchExtraction.await();
-			} catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, e.getMessage(), e);
-				Thread.currentThread().interrupt();
-			}
+        	ph.arriveAndAwaitAdvance();
     		
 			for (int i = 0; i < N_THREAD; i++) {
-				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, rgbShiftedPoints, latch));
-//				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, rgbShiftedPoints, ph));
+				executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, rgbShiftedPoints, ph));
 			}
 			
-//			ph.arriveAndAwaitAdvance();
-//			ph.arriveAndDeregister();
-			
-			try {
-				latch.await();
-			} catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, e.getMessage(), e);
-				Thread.currentThread().interrupt();
-			}
-			
-			
+			ph.arriveAndAwaitAdvance();
+						
 //			resultImage = new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
 //			
 //			for (int i = 0; i < N_THREAD; i++) {
 //				executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, rgbShiftedPoints, latchRender));
 //			}
 //			
-//			try {
-//				latchRender.await();
-//			} catch (InterruptedException e) {
-//				LOGGER.log(Level.WARNING, e.getMessage(), e);
-//				Thread.currentThread().interrupt();
-//			}
-//			
+//			ph.arriveAndAwaitAdvance();
 //			ip.write(resultImage, "results/prova.jpg");
-
 			
+			ph.arriveAndDeregister();
+
 			executor.shutdown();
 			try {
 			    if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {

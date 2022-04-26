@@ -2,7 +2,6 @@ package com.apt.project.mean_shift.utils.parallel;
 
 import java.awt.image.Raster;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
 
 import com.apt.project.mean_shift.model.Point;
@@ -14,16 +13,7 @@ public class PixelsExtractionThread implements Runnable {
 	private int nThreads;
 	private Raster raster;
 	private List<Point<Double>> extractedPoints;
-	private CountDownLatch latch;
 	private Phaser ph;
-
-	public PixelsExtractionThread(int tid, int nThreads, Raster raster, List<Point<Double>> extractedPoints, CountDownLatch latch) {
-		this.tid = tid;
-		this.nThreads = nThreads;
-		this.raster = raster;
-		this.extractedPoints = extractedPoints;
-		this.latch = latch;
-	}
 	
 	public PixelsExtractionThread(int tid, int nThreads, Raster raster, List<Point<Double>> extractedPoints, Phaser ph) {
 		this.tid = tid;
@@ -60,10 +50,8 @@ public class PixelsExtractionThread implements Runnable {
 	          pixel = raster.getPixel(j, i, new int[3]);
 	          extractedPoints.get(i*width + j).replace(ColorConverter.convertToLUVPoint(new Point<>(pixel[0], pixel[1], pixel[2])));
 	        }
-	    }		
-		latch.countDown();
-		
-//		ph.arriveAndDeregister();
+	    }				
+		ph.arriveAndDeregister();
 		
 	}
 
