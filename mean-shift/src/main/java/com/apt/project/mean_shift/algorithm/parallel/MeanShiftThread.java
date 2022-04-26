@@ -6,6 +6,7 @@ import java.util.concurrent.Phaser;
 import java.util.logging.Logger;
 
 import com.apt.project.mean_shift.model.Point;
+import com.apt.project.mean_shift.model.PointsSoA;
 import com.apt.project.mean_shift.utils.ColorConverter;
 
 public class MeanShiftThread implements Runnable{
@@ -17,7 +18,9 @@ public class MeanShiftThread implements Runnable{
 	private int maxIter;
 	private double kernelDen;
 	private List<Point<Double>> originPoints;
+	private PointsSoA<Double> originPointsSoA;
 	private List<Point<Integer>> finalPoints;
+	private PointsSoA<Integer> finalPointsSoA;
 	private Phaser ph;
 	
 	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
@@ -28,6 +31,18 @@ public class MeanShiftThread implements Runnable{
 		this.kernelDen = 2 * Math.pow(bandwidth, 2);
 		this.originPoints = originPoints;
 		this.finalPoints = finalPoints;
+		this.ph = ph;
+		ph.register();
+	}
+	
+	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, PointsSoA<Double> originPoints,
+			PointsSoA<Integer> finalPoints, Phaser ph) {
+		this.tid = tid;
+		this.nThreads = nThreads;
+		this.maxIter = maxIter;
+		this.kernelDen = 2 * Math.pow(bandwidth, 2);
+		this.originPointsSoA = originPoints;
+		this.finalPointsSoA = finalPoints;
 		this.ph = ph;
 		ph.register();
 	}
@@ -71,10 +86,80 @@ public class MeanShiftThread implements Runnable{
 
 		return new Point<>(shiftX, shiftY, shiftZ);
 	}
+	
+	public Point<Double> shiftPointSoA(Point<Double> p) {
+		double shiftX = 0;
+		double shiftY = 0;
+		double shiftZ = 0;
+		double scaleFactor = 0;
+		
+		for (int i = 0; i < originPointsSoA.size(); i++) {
+			Point<Double> point = new Point<>(originPointsSoA.getD1().get(i), originPointsSoA.getD2().get(i), originPointsSoA.getD3().get(i));
+			double dist = this.euclideanDistancePow2(p, point);
+			double weight = this.kernel(dist);
+// numerator
+			shiftX += point.getD1() * weight;
+			shiftY += point.getD2() * weight;
+			shiftZ += point.getD3() * weight;
+// denominator
+			scaleFactor += weight;
+		}
+		
+		if (scaleFactor == 0) {
+			LOGGER.warning("Scale factor is zero!");
+			return null; 
+		}
+		shiftX = shiftX / scaleFactor;
+		shiftY = shiftY / scaleFactor;
+		shiftZ = shiftZ / scaleFactor;
 
+		return new Point<>(shiftX, shiftY, shiftZ);
+	}
+	
+
+//	@Override
+//	public void run() {
+//		int numberOfElements = originPoints.size();
+//		int minElementsPerThread = numberOfElements / nThreads;
+//		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
+//		int chunkSize;
+//		int startChunk;
+//		if (tid < threadsWithMoreElements) {
+//			chunkSize = minElementsPerThread + 1;
+//			startChunk = tid * chunkSize;
+//		} else {
+//			chunkSize = minElementsPerThread;
+//			startChunk = threadsWithMoreElements * (chunkSize + 1) + (tid - threadsWithMoreElements) * chunkSize;
+//		}
+//		int endChunk = startChunk + chunkSize;
+//		
+//		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>(chunkSize);
+////		deep copy of origin points
+//		for (int i = startChunk; i < endChunk; i++) {
+//			shiftedPoints.add(new Point<>(originPoints.get(i)));
+//		}
+////		algorithm main loop
+//		
+//		for (int i = 0; i < this.maxIter; i++) {
+//			LOGGER.info("iterazione: " + i);
+//			for (int j = 0; j < chunkSize; j++) {
+//				Point<Double> point = shiftedPoints.get(j);
+//				point.replace(this.shiftPoint(point));
+//			}
+//		}
+//				
+//		for (int i = startChunk; i < endChunk; i++) {
+//			finalPoints.get(i).replace(ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
+////			TRY TO USE SET OF ARRAYLIST INSTEAD OF CUSTOM REPLACE
+//		}
+//		
+//		ph.arriveAndDeregister();
+//	}
+	
+//
 	@Override
 	public void run() {
-		int numberOfElements = originPoints.size();
+		int numberOfElements = originPointsSoA.size();
 		int minElementsPerThread = numberOfElements / nThreads;
 		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
 		int chunkSize;
@@ -91,7 +176,7 @@ public class MeanShiftThread implements Runnable{
 		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>(chunkSize);
 //		deep copy of origin points
 		for (int i = startChunk; i < endChunk; i++) {
-			shiftedPoints.add(new Point<>(originPoints.get(i)));
+			shiftedPoints.add(new Point<>(originPointsSoA.getD1().get(i), originPointsSoA.getD2().get(i), originPointsSoA.getD3().get(i)));
 		}
 //		algorithm main loop
 		
@@ -99,14 +184,16 @@ public class MeanShiftThread implements Runnable{
 			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < chunkSize; j++) {
 				Point<Double> point = shiftedPoints.get(j);
-				point.replace(this.shiftPoint(point));
+				point.replace(this.shiftPointSoA(point));
 			}
 		}
 				
 		for (int i = startChunk; i < endChunk; i++) {
-			finalPoints.get(i).replace(ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
+			Point<Integer> rgbPoint = ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk));
+			finalPointsSoA.getD1().set(i, rgbPoint.getD1());
+			finalPointsSoA.getD2().set(i, rgbPoint.getD2());
+			finalPointsSoA.getD3().set(i, rgbPoint.getD3());
 		}
-		
 		ph.arriveAndDeregister();
 	}
 
