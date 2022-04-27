@@ -143,20 +143,19 @@ public class MeanShiftThread implements Runnable{
 //		for (int i = 0; i < this.maxIter; i++) {
 //			LOGGER.info("iterazione: " + i);
 //			for (int j = 0; j < chunkSize; j++) {
-//				Point<Double> point = shiftedPoints.get(j);
-//				point.replace(this.shiftPoint(point));
+//				shiftedPoints.set(j, this.shiftPoint(shiftedPoints.get(j)));
 //			}
 //		}
 //				
 //		for (int i = startChunk; i < endChunk; i++) {
-//			finalPoints.get(i).replace(ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
-////			TRY TO USE SET OF ARRAYLIST INSTEAD OF CUSTOM REPLACE
+////			finalPoints.get(i).replace(ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
+//			finalPoints.set(i, ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
 //		}
 //		
 //		ph.arriveAndDeregister();
 //	}
 	
-//
+
 	@Override
 	public void run() {
 		int numberOfElements = originPointsSoA.size();
@@ -183,8 +182,7 @@ public class MeanShiftThread implements Runnable{
 		for (int i = 0; i < this.maxIter; i++) {
 			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < chunkSize; j++) {
-				Point<Double> point = shiftedPoints.get(j);
-				point.replace(this.shiftPointSoA(point));
+				shiftedPoints.set(j, this.shiftPointSoA(shiftedPoints.get(j)));
 			}
 		}
 				

@@ -48,7 +48,7 @@ public class PixelsExtractionThread implements Runnable {
 		for (int i = 0; i < height; i++) {
 	    	for (int j = startChunk; j < endChunk; j++) {
 	          pixel = raster.getPixel(j, i, new int[3]);
-	          extractedPoints.get(i*width + j).replace(ColorConverter.convertToLUVPoint(new Point<>(pixel[0], pixel[1], pixel[2])));
+	          extractedPoints.set(i*width + j, ColorConverter.convertToLUVPoint(new Point<>(pixel[0], pixel[1], pixel[2])));
 	        }
 	    }				
 		ph.arriveAndDeregister();
