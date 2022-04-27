@@ -37,9 +37,4 @@ public class Point<T> {
 	public String toCSVString() {
 		return d1 + "," + d2 + "," + d3 + "\n";
 	}
-	public void replace(Point<T> p) {
-		this.d1 = p.d1;
-		this.d2 = p.d2;
-		this.d3 = p.d3;
-	}
 }
