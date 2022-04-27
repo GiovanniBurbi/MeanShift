@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.Phaser;
 
 import com.apt.project.mean_shift.model.Point;
+import com.apt.project.mean_shift.model.PointsSoA;
 import com.apt.project.mean_shift.utils.ColorConverter;
 
 public class PixelsExtractionThread implements Runnable {
@@ -13,7 +14,9 @@ public class PixelsExtractionThread implements Runnable {
 	private int nThreads;
 	private Raster raster;
 	private List<Point<Double>> extractedPoints;
+	private PointsSoA<Double> extractedPointsSoA;
 	private Phaser ph;
+	private boolean isAoS;
 	
 	public PixelsExtractionThread(int tid, int nThreads, Raster raster, List<Point<Double>> extractedPoints, Phaser ph) {
 		this.tid = tid;
@@ -21,7 +24,41 @@ public class PixelsExtractionThread implements Runnable {
 		this.raster = raster;
 		this.extractedPoints = extractedPoints;
 		this.ph = ph;
+		this.isAoS = true;
 		ph.register();
+	}
+	
+	public PixelsExtractionThread(int tid, int nThreads, Raster raster, PointsSoA<Double> extractedPoints, Phaser ph) {
+		this.tid = tid;
+		this.nThreads = nThreads;
+		this.raster = raster;
+		this.extractedPointsSoA = extractedPoints;
+		this.ph = ph;
+		this.isAoS = false;
+		ph.register();
+	}
+	
+	private void extractAoS(int height, int width, int startChunk, int endChunk) {
+		int[] pixel;
+		for (int i = 0; i < height; i++) {
+	    	for (int j = startChunk; j < endChunk; j++) {
+	          pixel = raster.getPixel(j, i, new int[3]);
+	          extractedPoints.set(i*width + j, new Point<>(ColorConverter.convertToLUVPoint(pixel)));
+	        }
+	    }
+	}
+	
+	private void extractSoA(int height, int width, int startChunk, int endChunk) {
+		int[] pixel;
+		for (int i = 0; i < height; i++) {
+	    	for (int j = startChunk; j < endChunk; j++) {
+	          pixel = raster.getPixel(j, i, new int[3]);
+	          Double[] luvPoint = ColorConverter.convertToLUVPoint(pixel);
+	          extractedPointsSoA.getD1().set(i*width + j, luvPoint[0]);
+	          extractedPointsSoA.getD2().set(i*width + j, luvPoint[1]);
+	          extractedPointsSoA.getD3().set(i*width + j, luvPoint[2]);
+	        }
+	    }
 	}
 
 	@Override
@@ -43,14 +80,9 @@ public class PixelsExtractionThread implements Runnable {
 		}
 		int endChunk = startChunk + chunkSize;
 		
-		int[] pixel;
-		
-		for (int i = 0; i < height; i++) {
-	    	for (int j = startChunk; j < endChunk; j++) {
-	          pixel = raster.getPixel(j, i, new int[3]);
-	          extractedPoints.set(i*width + j, ColorConverter.convertToLUVPoint(new Point<>(pixel[0], pixel[1], pixel[2])));
-	        }
-	    }				
+		if(isAoS) extractAoS(height, width, startChunk, endChunk);
+		else extractSoA(height, width, startChunk, endChunk);
+						
 		ph.arriveAndDeregister();
 		
 	}
