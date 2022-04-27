@@ -27,6 +27,7 @@ public class MeanShift {
 		this.originPointsSoA = originPoints;
 	}
 
+//	Method to calculate the euclidean distance power 2 between two 3D points
 	private double euclideanDistancePow2(Point<Double> shiftPoint, Point<Double> originPoint) {
 		double distX = Math.pow(shiftPoint.getD1() - originPoint.getD1(), 2);
 		double distY = Math.pow(shiftPoint.getD2() - originPoint.getD2(), 2);
@@ -34,18 +35,21 @@ public class MeanShift {
 		return distX + distY + distZ;
 	}
 	
-	private double euclideanDistancePow2SoA(Double[] shiftPoint, Double[] originPoint) {
+//	Method to calculate the euclidean distance power 2 between two 3D points
+	private double euclideanDistancePow2(Double[] shiftPoint, Double[] originPoint) {
 		double distX = Math.pow(shiftPoint[0] - originPoint[0], 2);
 		double distY = Math.pow(shiftPoint[1] - originPoint[1], 2);
 		double distZ = Math.pow(shiftPoint[2] - originPoint[2], 2);
 		return distX + distY + distZ;
 	}
 	
+//	Method to calculate the gaussian kernel given the distance between two 3D points
 	private double kernel(double dist) {
 		double pow = - (dist / (2 * kernelDen));
 		return Math.exp(pow);
 	}
 	
+//	Method to shift a 3D point based on the mean shift algorithm
 	private Point<Double> shiftPoint(Point<Double> p) {
 		double shiftX = 0;
 		double shiftY = 0;
@@ -87,7 +91,7 @@ public class MeanShift {
 			Double originX = originPointsSoA.getD1().get(i);
 			Double originY = originPointsSoA.getD2().get(i);
 			Double originZ = originPointsSoA.getD3().get(i);
-			double dist = this.euclideanDistancePow2SoA(p, new Double[]{originX,  originY, originZ});
+			double dist = this.euclideanDistancePow2(p, new Double[]{originX,  originY, originZ});
 			double weight = this.kernel(dist);
 			
 // 			numerator
@@ -110,6 +114,7 @@ public class MeanShift {
 		return new Double[]{shiftX, shiftY, shiftZ};
 	}
 	
+//	Method that applies the mean shift algorithm to a list of 3D points
 	public List<Point<Double>> meanShiftAlgorithm() {
 		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>(originPoints.size());
 		
@@ -120,7 +125,7 @@ public class MeanShift {
 		
 		// algorithm main loop
 		for(int i = 0; i < this.maxIter; i++) {
-			LOGGER.info("iterazione: " + i);
+//			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < shiftedPoints.size(); j++) {
 				shiftedPoints.set(j, this.shiftPoint(shiftedPoints.get(j)));
 			}
@@ -128,19 +133,20 @@ public class MeanShift {
 		return shiftedPoints;
 	}
 	
+//	Method that applies the mean shift algorithm to 3D points stored as a structure of arrays (SoA)
 	public PointsSoA<Double> meanShiftAlgorithmSoA() {
 		ArrayList<Double> shiftedX = new ArrayList<>(originPointsSoA.size());
 		ArrayList<Double> shiftedY = new ArrayList<>(originPointsSoA.size());
 		ArrayList<Double> shiftedZ = new ArrayList<>(originPointsSoA.size());
 		
-// 		deep copy of origin points
+		// deep copy of origin points
 		for (int i = 0; i < originPointsSoA.size(); i++) {
 			shiftedX.add(originPointsSoA.getD1().get(i));
 			shiftedY.add(originPointsSoA.getD2().get(i));
 			shiftedZ.add(originPointsSoA.getD3().get(i));
 		}
-
-// 		algorithm main loop
+		
+		// algorithm main loop
 		for(int i = 0; i < this.maxIter; i++) {
 			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < originPointsSoA.size(); j++) {

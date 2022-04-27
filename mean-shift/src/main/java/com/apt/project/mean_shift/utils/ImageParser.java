@@ -24,6 +24,7 @@ public class ImageParser {
 	
 	public ImageParser(String path) {
 		try {
+//			read image from path
 			this.image = ImageIO.read(this.getClass().getResource(path));
 			this.width = image.getWidth();
 			this.height = image.getHeight();
@@ -36,6 +37,7 @@ public class ImageParser {
 		return image.getRaster();
 	}
 	
+//	Method to extract RGB points from an image and store it in an List
 	public List<Point<Integer>> extractRGBPoints() {
 		ArrayList<Point<Integer>> rgbPoints = new ArrayList<>();
 		int[] pixel;
@@ -50,6 +52,7 @@ public class ImageParser {
 		return rgbPoints;
 	}
 	
+//	Method to extract LUV points from an image and store it in a List
 	public List<Point<Double>> extractLUVPoints() {
 		ArrayList<Point<Double>> luvPoints = new ArrayList<>();
 		int[] pixel;
@@ -64,6 +67,7 @@ public class ImageParser {
 		return luvPoints;
 	}
 	
+//	Method to extract LUV points from an image and store it in an structure of arrays (SoA)
 	public PointsSoA<Double> extractLUVPointsSoA() {
 		ArrayList<Double> d1 = new ArrayList<>();
 		ArrayList<Double> d2 = new ArrayList<>();
@@ -83,29 +87,9 @@ public class ImageParser {
 		return new PointsSoA<>(d1, d2, d3);
 	}
 	
-	
+//	Method to render an image from a list of RGB points and write it as a JPG image in the specified path.
 	public void renderImage(List<Point<Integer>> points, String path) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
-		for (int i = 0; i < height; i++) {
-    		for (int j = 0; j < width; j++) {
-    			Point<Integer> point = points.get(i*width + j);
-    			int rgb = point.getD1();
-		        rgb = (rgb << 8) + point.getD2(); 
-		        rgb = (rgb << 8) + point.getD3();
-		        outputImage.setRGB(j, i, rgb);
-		     }
-		}
-		
-    	File outputFile = new File(path);
-    	try {
-			ImageIO.write(outputImage, "jpg", outputFile);
-		} catch (IOException e) {
-			LOGGER.log(Level.WARNING, e.getMessage(), e);
-		}
-	}
-	
-	public void renderImageOneLoop(List<Point<Integer>> points, String path) {
-		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			Point<Integer> point = points.get(i);
 			int rgb = point.getD1();
@@ -122,7 +106,51 @@ public class ImageParser {
 		}
 	}
 	
-	public void renderImageOneLoopSoA(PointsSoA<Integer> points, String path) {
+//	Method to render an image from a list of RGB points and write it as a JPG image in the specified path.
+	public void renderImageFromLUV(List<Point<Double>> points, String path) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < width*height; i++) {
+			Point<Integer> point = ColorConverter.convertToRGBPoint(points.get(i));
+			int rgb = point.getD1();
+	        rgb = (rgb << 8) + point.getD2(); 
+	        rgb = (rgb << 8) + point.getD3();
+	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+		
+    	File outputFile = new File(path);
+    	try {
+			ImageIO.write(outputImage, "jpg", outputFile);
+		} catch (IOException e) {
+			LOGGER.log(Level.WARNING, e.getMessage(), e);
+		}
+	}
+	
+//	Method that creates an image as a bufferedImage from a list of RGB points
+	public void renderImage(List<Point<Integer>> points) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < width*height; i++) {
+			Point<Integer> point = points.get(i);
+			int rgb = point.getD1();//	Method that creates an image as a bufferedImage from a list of RGB points
+	        rgb = (rgb << 8) + point.getD2();
+	        rgb = (rgb << 8) + point.getD3();
+	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+	}
+	
+//	Method that creates an image as a bufferedImage from a list of LUV points
+	public void renderImageFromLUV(List<Point<Double>> points) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < width*height; i++) {
+			Point<Integer> point = ColorConverter.convertToRGBPoint(points.get(i));
+			int rgb = point.getD1();//	Method that creates an image as a bufferedImage from a list of RGB points
+	        rgb = (rgb << 8) + point.getD2();
+	        rgb = (rgb << 8) + point.getD3();
+	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+	}
+	
+//	Method to render an image from RGB points stored as a structure of arrays and write it as a JPG image in the path specified.
+	public void renderImageSoA(PointsSoA<Integer> points, String path) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			int rgb = points.getD1().get(i);
@@ -139,31 +167,8 @@ public class ImageParser {
 		}
 	}
 	
-	public void renderImageWithoutWrite(List<Point<Integer>> points) {
-		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
-		for (int i = 0; i < height; i++) {
-    		for (int j = 0; j < width; j++) {
-    			Point<Integer> point = points.get(i*width + j);
-    			int rgb = point.getD1();
-		        rgb = (rgb << 8) + point.getD2(); 
-		        rgb = (rgb << 8) + point.getD3();
-		        outputImage.setRGB(j, i, rgb);
-		     }
-		}
-	}
-	
-	public void renderImageWithoutWriteOneLoop(List<Point<Integer>> points) {
-		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
-		for (int i = 0; i < width*height; i++) {
-			Point<Integer> point = points.get(i);
-			int rgb = point.getD1();
-	        rgb = (rgb << 8) + point.getD2(); 
-	        rgb = (rgb << 8) + point.getD3();
-	        outputImage.setRGB( i % width, i / width, rgb);
-		}
-	}
-	
-	public void renderImageWithoutWriteOneLoopSoA(PointsSoA<Integer> points) {
+//	Method that creates an image as a bufferedImage from RGB points stored as structure of arrays
+	public void renderImageSoA(PointsSoA<Integer> points) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			int rgb = points.getD1().get(i);
@@ -173,6 +178,38 @@ public class ImageParser {
 		}
 	}
 	
+//	Method that creates an image as a bufferedImage from RGB points stored as structure of arrays
+	public void renderImageSoAFromLUV(PointsSoA<Double> points) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < width*height; i++) {
+			int[] point = ColorConverter.convertToRGBPoint(new Double[]{points.getD1().get(i), points.getD2().get(i), points.getD3().get(i)});
+			int rgb = point[0];
+	        rgb = (rgb << 8) + point[1]; 
+	        rgb = (rgb << 8) + point[2];
+	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+	}
+	
+//	Method that creates an image as a bufferedImage from RGB points stored as structure of arrays and write it as a JPG image in the path specified.
+	public void renderImageSoAFromLUV(PointsSoA<Double> points, String path) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < width*height; i++) {
+			int[] point = ColorConverter.convertToRGBPoint(new Double[]{points.getD1().get(i), points.getD2().get(i), points.getD3().get(i)});
+			int rgb = point[0];
+	        rgb = (rgb << 8) + point[1]; 
+	        rgb = (rgb << 8) + point[2];
+	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+		
+		File outputFile = new File(path);
+    	try {
+			ImageIO.write(outputImage, "jpg", outputFile);
+		} catch (IOException e) {
+			LOGGER.log(Level.WARNING, e.getMessage(), e);
+		}
+	}
+	
+//	Method to write an JPG image from a bufferedImage in the given path
 	public void write(BufferedImage image, String path) {
 		File outputFile = new File(path);
     	try {
@@ -182,10 +219,12 @@ public class ImageParser {
 		}
 	}
 	
+//	Method to print a list of points of a generic type
 	public void printPoints(List<Point<?>> points) {
 		points.forEach(p->LOGGER.info(p.toString()));
 	}
 	
+//	Method to print the size of the image
 	public void printImageSize() {
 		LOGGER.info(this.image.getWidth() + " x " + this.image.getHeight());
 	}

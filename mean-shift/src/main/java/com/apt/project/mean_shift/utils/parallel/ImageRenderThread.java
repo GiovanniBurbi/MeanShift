@@ -37,7 +37,7 @@ public class ImageRenderThread implements Runnable{
 		ph.register();
 	}
 	
-	private void renderAoS(int width, int startChunk, int endChunk) {
+	private void renderAoS(int width, int startChunk, int endChunk) {		
 		for (int i = startChunk; i < endChunk; i++) {
 			Point<Integer> point = renderPoints.get(i);
 			int rgb = point.getD1();

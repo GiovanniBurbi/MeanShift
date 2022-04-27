@@ -142,7 +142,7 @@ public class MeanShiftThread implements Runnable{
 
 //		algorithm main loop
 		for (int i = 0; i < this.maxIter; i++) {
-			LOGGER.info("iterazione: " + i);
+//			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < chunkSize; j++) {
 				shiftedPoints.set(j, this.shiftPoint(shiftedPoints.get(j)));
 			}
@@ -168,7 +168,7 @@ public class MeanShiftThread implements Runnable{
 		
 //		algorithm main loop
 		for (int i = 0; i < this.maxIter; i++) {
-			LOGGER.info("iterazione: " + i);
+//			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < chunkSize; j++) {
 				Double[] shiftedPoint = shiftPointSoA(shiftedX.get(j), shiftedY.get(j), shiftedZ.get(j));
 				shiftedX.set(j, shiftedPoint[0]);

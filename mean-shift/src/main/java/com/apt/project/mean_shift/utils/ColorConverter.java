@@ -33,7 +33,7 @@ public class ColorConverter {
 		ArrayList<Integer> d3 = new ArrayList<>();
 		
 		for (int i = 0; i < points.size(); i++) {
-			int[] rgbPoint = convertToRGBPoint(new Double[]{points.getD1().get(i), points.getD2().get(i), points.getD3().get(i)});
+			int[] rgbPoint = luv2rgb(new Double[]{points.getD1().get(i), points.getD2().get(i), points.getD3().get(i)});
 			d1.add(rgbPoint[0]);
 			d2.add(rgbPoint[1]);
 			d3.add(rgbPoint[2]);
