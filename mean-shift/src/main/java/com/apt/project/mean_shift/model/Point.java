@@ -17,6 +17,12 @@ public class Point<T> {
 		this.d3 = point.d3;
 	}
 	
+	public Point(T[] point) {
+		this.d1 = point[0];
+		this.d2 = point[1];
+		this.d3 = point[2];
+	}
+	
 	public T getD1() {
 		return d1;
 	}

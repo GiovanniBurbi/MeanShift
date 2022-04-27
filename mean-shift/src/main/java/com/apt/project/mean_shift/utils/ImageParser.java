@@ -57,7 +57,7 @@ public class ImageParser {
 		for (int i = 0; i < height; i++) {
 	    	for (int j = 0; j < width; j++) {
 	          pixel = raster.getPixel(j, i, new int[3]);
-	          luvPoints.add(ColorConverter.convertToLUVPoint(new Point<>(pixel[0], pixel[1], pixel[2])));
+	          luvPoints.add(new Point<>(ColorConverter.convertToLUVPoint(pixel)));
 	        }
 	    }
 		

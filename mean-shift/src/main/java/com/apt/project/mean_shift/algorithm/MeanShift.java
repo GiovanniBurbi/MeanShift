@@ -27,26 +27,26 @@ public class MeanShift {
 		this.originPointsSoA = originPoints;
 	}
 
-	public double euclideanDistancePow2(Point<Double> shiftPoint, Point<Double> originPoint) {
+	private double euclideanDistancePow2(Point<Double> shiftPoint, Point<Double> originPoint) {
 		double distX = Math.pow(shiftPoint.getD1() - originPoint.getD1(), 2);
 		double distY = Math.pow(shiftPoint.getD2() - originPoint.getD2(), 2);
 		double distZ = Math.pow(shiftPoint.getD3() - originPoint.getD3(), 2);
 		return distX + distY + distZ;
 	}
 	
-	public double euclideanDistancePow2SoA(Double[] shiftPoint, Double[] originPoint) {
+	private double euclideanDistancePow2SoA(Double[] shiftPoint, Double[] originPoint) {
 		double distX = Math.pow(shiftPoint[0] - originPoint[0], 2);
 		double distY = Math.pow(shiftPoint[1] - originPoint[1], 2);
 		double distZ = Math.pow(shiftPoint[2] - originPoint[2], 2);
 		return distX + distY + distZ;
 	}
 	
-	public double kernel(double dist) {
+	private double kernel(double dist) {
 		double pow = - (dist / (2 * kernelDen));
 		return Math.exp(pow);
 	}
 	
-	public Point<Double> shiftPoint(Point<Double> p) {
+	private Point<Double> shiftPoint(Point<Double> p) {
 		double shiftX = 0;
 		double shiftY = 0;
 		double shiftZ = 0;
@@ -76,7 +76,7 @@ public class MeanShift {
 		return new Point<>(shiftX, shiftY, shiftZ);
 	}
 	
-	public Double[] shiftPointSoA(Double x, Double y, Double z) {
+	private Double[] shiftPointSoA(Double x, Double y, Double z) {
 		double shiftX = 0;
 		double shiftY = 0;
 		double shiftZ = 0;
@@ -122,7 +122,6 @@ public class MeanShift {
 		for(int i = 0; i < this.maxIter; i++) {
 			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < shiftedPoints.size(); j++) {
-//				shiftedPoints.get(j).replace(this.shiftPoint(shiftedPoints.get(j)));				
 				shiftedPoints.set(j, this.shiftPoint(shiftedPoints.get(j)));
 			}
 		}
