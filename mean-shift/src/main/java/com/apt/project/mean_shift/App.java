@@ -67,6 +67,7 @@ public class App
 		    		List<Point<Double>> luvPoints = ip.extractLUVPoints();
 		    		MeanShift meanShift = new MeanShift(BANDWIDTH, ALGORITHM_ITER, luvPoints);
 		    		List<Point<Double>> shiftedPoints = meanShift.meanShiftAlgorithm();
+//		    		rgb conversion should be done by image parser, render method
 		    		rgbShiftedPoints = ColorConverter.convertToRGBPoints(shiftedPoints);
 		    		ip.renderImageWithoutWriteOneLoop(rgbShiftedPoints);
 		    	
@@ -112,8 +113,6 @@ public class App
 	    	
 
 	    	if (PARALLEL_AOS_VERSION) {
-	    		List<Point<Double>> luvPoints = null;
-		    	List<Point<Integer>> rgbShiftedPoints = null;
 	    		BufferedImage resultImage = null;
 		    	long allTimes = 0;
 	    		
@@ -125,8 +124,8 @@ public class App
 					
 		        	Raster raster = ip.getRaster();
 		
-		        	rgbShiftedPoints = new ArrayList<>();
-		        	luvPoints = new ArrayList<>();
+		        	List<Point<Integer>> rgbShiftedPoints = new ArrayList<>();
+		        	List<Point<Double>> luvPoints = new ArrayList<>();
 		        	for (int i = 0; i < raster.getHeight() * raster.getWidth(); i++) {
 		        		luvPoints.add(new Point<>(0.0, 0.0, 0.0));
 		        		rgbShiftedPoints.add(new Point<>(0, 0, 0));
@@ -135,6 +134,7 @@ public class App
 		        	for (int i = 0; i < N_THREAD; i++) {
 		        		executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPoints, ph));
 					}
+
 		        	ph.arriveAndAwaitAdvance();
 			    		
 					for (int i = 0; i < N_THREAD; i++) {
@@ -170,43 +170,65 @@ public class App
 				
 				LOGGER.info("Parallel version took " + (allTimes / ITER) + " milliseconds");
 				
-		    	str.append("_Parallel_AoS").append("_THREADS").append(N_THREAD).append(".jpg");
+		    	str.append("_Parallel_AoS").append("_").append(N_THREAD).append("-Threads").append(".jpg");
 			    	
-		    	ip.renderImage(rgbShiftedPoints, str.toString());
+		    	ip.write(resultImage, str.toString());
 	    	}
 	    	
 	    	
 	//    	Parallel SoA
 	    	
-	    	if (PARALLEL_SOA_VERSION) {
-		    	PointsSoA<Double> luvPointsSoA = ip.extractLUVPointsSoA();
+	    	if (PARALLEL_SOA_VERSION) {		    	
+		    	BufferedImage resultImage = null;
 		    	long allTimes = 0;
 		    	
-		    	ArrayList<Integer> d1 = new ArrayList<>();
-		    	ArrayList<Integer> d2 = new ArrayList<>();
-		    	ArrayList<Integer> d3 = new ArrayList<>();
-		    	
-		    	for (int i = 0; i < luvPointsSoA.size(); i++) {
-		    		d1.add(0);
-		    		d2.add(0);
-		    		d3.add(0);
-		    	}
-		    	
-		    	PointsSoA<Integer> rgbShiftedPointsSoA = new PointsSoA<>(d1, d2, d3); 
-		    	
 		    	for (int k = 0; k < ITER; k++) {
+		    		long startTime = System.currentTimeMillis();
 		    		
 		    		Phaser ph = new Phaser(1);
 		        	ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
 		    		
-		    		long startTime = System.currentTimeMillis();
-		    		    	
+		        	Raster raster = ip.getRaster();
+			    	
+		        	ArrayList<Double> d1 = new ArrayList<>();
+		        	ArrayList<Double> d2 = new ArrayList<>();
+		        	ArrayList<Double> d3 = new ArrayList<>();
+		        	
+			    	ArrayList<Integer> resultD1 = new ArrayList<>();
+			    	ArrayList<Integer> resultD2 = new ArrayList<>();
+			    	ArrayList<Integer> resultD3 = new ArrayList<>();
+			    	
+			    	for (int i = 0; i < raster.getWidth() * raster.getHeight(); i++) {
+			    		d1.add(0.0);
+			    		d2.add(0.0);
+			    		d3.add(0.0);
+			    		resultD1.add(0);
+			    		resultD2.add(0);
+			    		resultD3.add(0);
+			    	}
+			    	
+			    	PointsSoA<Double> luvPointsSoA = new PointsSoA<>(d1, d2, d3);
+			    	PointsSoA<Integer> rgbShiftedPointsSoA = new PointsSoA<>(resultD1, resultD2, resultD3);
+			    	
+			    	for (int i = 0; i < N_THREAD; i++) {
+		        		executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPointsSoA, ph));
+					}
+
+		        	ph.arriveAndAwaitAdvance();
 		    		
 					for (int i = 0; i < N_THREAD; i++) {
 						executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPointsSoA, rgbShiftedPointsSoA, ph));
 					}
 					
 					ph.arriveAndAwaitAdvance();
+					
+					resultImage = new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
+					
+					for (int i = 0; i < N_THREAD; i++) {
+						executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, rgbShiftedPointsSoA, ph));
+					}
+					
+					ph.arriveAndAwaitAdvance();					
 					ph.arriveAndDeregister();
 					
 					executor.shutdown();
@@ -227,9 +249,9 @@ public class App
 		    	
 		    	LOGGER.info("Parallel version took " + (allTimes / ITER) + " milliseconds");
 		    	
-		    	str.append("_Parallel_SoA").append("_THREADS").append(N_THREAD).append(".jpg");
+		    	str.append("_Parallel_SoA").append("_").append(N_THREAD).append("-Threads").append(".jpg");
 		    	
-		    	ip.renderImageOneLoopSoA(rgbShiftedPointsSoA, str.toString());
+		    	ip.write(resultImage, str.toString());
 	    	}
 		}
     	
