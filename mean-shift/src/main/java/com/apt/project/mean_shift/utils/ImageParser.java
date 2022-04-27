@@ -74,10 +74,10 @@ public class ImageParser {
 		for (int i = 0; i < height; i++) {
 	    	for (int j = 0; j < width; j++) {
 	          pixel = raster.getPixel(j, i, new int[3]);
-	          Point<Double> point = new Point<>(ColorConverter.convertToLUVPoint(new Point<>(pixel[0], pixel[1], pixel[2])));
-	          d1.add(point.getD1());
-	          d2.add(point.getD2());
-	          d3.add(point.getD3());
+	          Double[] point = ColorConverter.convertToLUVPoint(pixel);
+	          d1.add(point[0]);
+	          d2.add(point[1]);
+	          d3.add(point[2]);
 	        }
 	    }
 		return new PointsSoA<>(d1, d2, d3);
@@ -159,6 +159,16 @@ public class ImageParser {
 			int rgb = point.getD1();
 	        rgb = (rgb << 8) + point.getD2(); 
 	        rgb = (rgb << 8) + point.getD3();
+	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+	}
+	
+	public void renderImageWithoutWriteOneLoopSoA(PointsSoA<Integer> points) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		for (int i = 0; i < width*height; i++) {
+			int rgb = points.getD1().get(i);
+	        rgb = (rgb << 8) + points.getD2().get(i); 
+	        rgb = (rgb << 8) + points.getD3().get(i);
 	        outputImage.setRGB( i % width, i / width, rgb);
 		}
 	}
