@@ -7,7 +7,6 @@ import java.util.logging.Logger;
 
 import com.apt.project.mean_shift.model.Point;
 import com.apt.project.mean_shift.model.PointsSoA;
-import com.apt.project.mean_shift.utils.ColorConverter;
 
 public class MeanShiftThread implements Runnable{
 	
@@ -19,32 +18,32 @@ public class MeanShiftThread implements Runnable{
 	private double kernelDen;
 	private List<Point<Double>> originPoints;
 	private PointsSoA<Double> originPointsSoA;
-	private List<Point<Integer>> finalPoints;
-	private PointsSoA<Integer> finalPointsSoA;
+	private List<Point<Double>> resultPoints;
+	private PointsSoA<Double> resultPointsSoA;
 	private Phaser ph;
 	private boolean isAoS;
 	
 	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
-			List<Point<Integer>> finalPoints, Phaser ph) {
+			List<Point<Double>> resultPoints, Phaser ph) {
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.maxIter = maxIter;
 		this.kernelDen = 2 * Math.pow(bandwidth, 2);
 		this.originPoints = originPoints;
-		this.finalPoints = finalPoints;
+		this.resultPoints = resultPoints;
 		this.ph = ph;
 		this.isAoS = true;
 		ph.register();
 	}
 	
 	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, PointsSoA<Double> originPoints,
-			PointsSoA<Integer> finalPoints, Phaser ph) {
+			PointsSoA<Double> resultPoints, Phaser ph) {
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.maxIter = maxIter;
 		this.kernelDen = 2 * Math.pow(bandwidth, 2);
 		this.originPointsSoA = originPoints;
-		this.finalPointsSoA = finalPoints;
+		this.resultPointsSoA = resultPoints;
 		this.ph = ph;
 		this.isAoS = false;
 		ph.register();
@@ -145,12 +144,10 @@ public class MeanShiftThread implements Runnable{
 //			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < chunkSize; j++) {
 				shiftedPoints.set(j, this.shiftPoint(shiftedPoints.get(j)));
+				if (i == this.maxIter - 1) {
+					resultPoints.set(startChunk + j, shiftedPoints.get(j));
+				}
 			}
-		}
-		
-//		put this conversion in render thread
-		for (int i = startChunk; i < endChunk; i++) {
-			finalPoints.set(i, ColorConverter.convertToRGBPoint(shiftedPoints.get(i-startChunk)));
 		}
 	}
 	
@@ -174,15 +171,13 @@ public class MeanShiftThread implements Runnable{
 				shiftedX.set(j, shiftedPoint[0]);
 				shiftedY.set(j, shiftedPoint[1]);
 				shiftedZ.set(j, shiftedPoint[2]);
+				
+				if (i == this.maxIter - 1) {
+					resultPointsSoA.getD1().set(startChunk + j, shiftedPoint[0]);
+					resultPointsSoA.getD2().set(startChunk + j, shiftedPoint[1]);
+					resultPointsSoA.getD3().set(startChunk + j, shiftedPoint[2]);
+				}
 			}
-		}
-		
-//		put this conversion in render thread
-		for (int i = startChunk; i < endChunk; i++) {
-			int[] rgbPoint = ColorConverter.convertToRGBPoint(new Double[] {shiftedX.get(i - startChunk), shiftedY.get(i - startChunk), shiftedZ.get(i - startChunk)});
-			finalPointsSoA.getD1().set(i, rgbPoint[0]);
-			finalPointsSoA.getD2().set(i, rgbPoint[1]);
-			finalPointsSoA.getD3().set(i, rgbPoint[2]);
 		}
 	}
 

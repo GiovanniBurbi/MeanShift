@@ -6,18 +6,19 @@ import java.util.concurrent.Phaser;
 
 import com.apt.project.mean_shift.model.Point;
 import com.apt.project.mean_shift.model.PointsSoA;
+import com.apt.project.mean_shift.utils.ColorConverter;
 
 public class ImageRenderThread implements Runnable{
 
 	private int tid;
 	private int nThreads;
 	private BufferedImage image;
-	private List<Point<Integer>> renderPoints;
-	private PointsSoA<Integer> renderPointsSoA;
+	private List<Point<Double>> renderPoints;
+	private PointsSoA<Double> renderPointsSoA;
 	private Phaser ph;
 	private boolean isAoS;
 
-	public ImageRenderThread(int tid, int nThreads, BufferedImage image, List<Point<Integer>> renderPoints, Phaser ph) {
+	public ImageRenderThread(int tid, int nThreads, BufferedImage image, List<Point<Double>> renderPoints, Phaser ph) {
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.image = image;
@@ -27,7 +28,7 @@ public class ImageRenderThread implements Runnable{
 		ph.register();
 	}
 	
-	public ImageRenderThread(int tid, int nThreads, BufferedImage image, PointsSoA<Integer> renderPoints, Phaser ph) {
+	public ImageRenderThread(int tid, int nThreads, BufferedImage image, PointsSoA<Double> renderPoints, Phaser ph) {
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.image = image;
@@ -39,7 +40,7 @@ public class ImageRenderThread implements Runnable{
 	
 	private void renderAoS(int width, int startChunk, int endChunk) {		
 		for (int i = startChunk; i < endChunk; i++) {
-			Point<Integer> point = renderPoints.get(i);
+			Point<Integer> point = ColorConverter.convertToRGBPoint(renderPoints.get(i));
 			int rgb = point.getD1();
 	        rgb = (rgb << 8) + point.getD2(); 
 	        rgb = (rgb << 8) + point.getD3();
@@ -49,9 +50,10 @@ public class ImageRenderThread implements Runnable{
 	
 	private void renderSoA(int width, int startChunk, int endChunk) {
 		for (int i = startChunk; i < endChunk; i++) {
-			int rgb = renderPointsSoA.getD1().get(i);
-	        rgb = (rgb << 8) + renderPointsSoA.getD2().get(i); 
-	        rgb = (rgb << 8) + renderPointsSoA.getD3().get(i);
+			int[] rgbPoint = ColorConverter.convertToRGBPoint(new Double[]{renderPointsSoA.getD1().get(i), renderPointsSoA.getD2().get(i), renderPointsSoA.getD3().get(i)});
+			int rgb = rgbPoint[0];
+	        rgb = (rgb << 8) + rgbPoint[1]; 
+	        rgb = (rgb << 8) + rgbPoint[2];
 	        image.setRGB(i % width, i / width, rgb);
 		}
 	}

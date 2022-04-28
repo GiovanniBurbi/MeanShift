@@ -24,12 +24,12 @@ public class App
 	private static final String SOURCE_IMAGE= "benzina200x150";
 	private static final boolean SEQUENTIAL_AOS_VERSION = false;
 	private static final boolean SEQUENTIAL_SOA_VERSION = false;
-	private static final boolean PARALLEL_AOS_VERSION = false;
-	private static final boolean PARALLEL_SOA_VERSION = false;
+	private static final boolean PARALLEL_AOS_VERSION = true;
+	private static final boolean PARALLEL_SOA_VERSION = true;
 	private static final int ITER = 1;
 	private static final int N_THREAD = 4;
 	private static final float BANDWIDTH = 12f;
-	private static final int ALGORITHM_ITER = 15;
+	private static final int ALGORITHM_ITER = 5;
 
 	
 	public static void main( String[] args ) {
@@ -40,6 +40,7 @@ public class App
 		
 		StringBuilder str = new StringBuilder();
 		str.append("results/").append(SOURCE_IMAGE).append("_BW").append(BANDWIDTH).append("_ITER").append(ALGORITHM_ITER);
+		int defaultStrSize = str.length();
 
 //    	Sequential AoS version
     	
@@ -109,11 +110,13 @@ public class App
 				
 	        	Raster raster = ip.getRaster();
 	
-	        	List<Point<Integer>> rgbShiftedPoints = new ArrayList<>();
+//	        	List<Point<Integer>> rgbShiftedPoints = new ArrayList<>();
 	        	List<Point<Double>> luvPoints = new ArrayList<>();
+	        	List<Point<Double>> resultPoints = new ArrayList<>();
 	        	for (int i = 0; i < raster.getHeight() * raster.getWidth(); i++) {
 	        		luvPoints.add(new Point<>(0.0, 0.0, 0.0));
-	        		rgbShiftedPoints.add(new Point<>(0, 0, 0));
+	        		resultPoints.add(new Point<Double>(0.0, 0.0, 0.0));
+//	        		rgbShiftedPoints.add(new Point<>(0, 0, 0));
 	        	}
 	        	
 	        	for (int i = 0; i < N_THREAD; i++) {
@@ -123,7 +126,7 @@ public class App
 	        	ph.arriveAndAwaitAdvance();
 		    		
 				for (int i = 0; i < N_THREAD; i++) {
-					executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, rgbShiftedPoints, ph));
+					executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, resultPoints, ph));
 				}
 				
 				ph.arriveAndAwaitAdvance();
@@ -131,7 +134,7 @@ public class App
 				resultImage = new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
 				
 				for (int i = 0; i < N_THREAD; i++) {
-					executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, rgbShiftedPoints, ph));
+					executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, resultPoints, ph));
 				}
 				
 				ph.arriveAndAwaitAdvance();
@@ -157,7 +160,9 @@ public class App
 			
 	    	str.append("_Parallel_AoS").append("_").append(N_THREAD).append("-Threads").append(".jpg");
 		    	
-//	    	ip.write(resultImage, str.toString());
+	    	ip.write(resultImage, str.toString());
+	    	
+	    	str.delete(defaultStrSize, str.length());
     	}
     	
     	
@@ -179,21 +184,21 @@ public class App
 	        	ArrayList<Double> d2 = new ArrayList<>();
 	        	ArrayList<Double> d3 = new ArrayList<>();
 	        	
-		    	ArrayList<Integer> resultD1 = new ArrayList<>();
-		    	ArrayList<Integer> resultD2 = new ArrayList<>();
-		    	ArrayList<Integer> resultD3 = new ArrayList<>();
+		    	ArrayList<Double> resultD1 = new ArrayList<>();
+		    	ArrayList<Double> resultD2 = new ArrayList<>();
+		    	ArrayList<Double> resultD3 = new ArrayList<>();
 		    	
 		    	for (int i = 0; i < raster.getWidth() * raster.getHeight(); i++) {
 		    		d1.add(0.0);
 		    		d2.add(0.0);
 		    		d3.add(0.0);
-		    		resultD1.add(0);
-		    		resultD2.add(0);
-		    		resultD3.add(0);
+		    		resultD1.add(0.0);
+		    		resultD2.add(0.0);
+		    		resultD3.add(0.0);
 		    	}
 		    	
 		    	PointsSoA<Double> luvPointsSoA = new PointsSoA<>(d1, d2, d3);
-		    	PointsSoA<Integer> rgbShiftedPointsSoA = new PointsSoA<>(resultD1, resultD2, resultD3);
+		    	PointsSoA<Double> resultPointsSoA = new PointsSoA<>(resultD1, resultD2, resultD3);
 		    	
 		    	for (int i = 0; i < N_THREAD; i++) {
 	        		executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPointsSoA, ph));
@@ -202,7 +207,7 @@ public class App
 	        	ph.arriveAndAwaitAdvance();
 	    		
 				for (int i = 0; i < N_THREAD; i++) {
-					executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPointsSoA, rgbShiftedPointsSoA, ph));
+					executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPointsSoA, resultPointsSoA, ph));
 				}
 				
 				ph.arriveAndAwaitAdvance();
@@ -210,7 +215,7 @@ public class App
 				resultImage = new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
 				
 				for (int i = 0; i < N_THREAD; i++) {
-					executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, rgbShiftedPointsSoA, ph));
+					executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, resultPointsSoA, ph));
 				}
 				
 				ph.arriveAndAwaitAdvance();					
@@ -236,7 +241,7 @@ public class App
 	    	
 	    	str.append("_Parallel_SoA").append("_").append(N_THREAD).append("-Threads").append(".jpg");
 	    	
-//	    	ip.write(resultImage, str.toString());
+	    	ip.write(resultImage, str.toString());
     	}
 	}
 }
