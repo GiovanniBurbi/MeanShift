@@ -144,6 +144,7 @@ public class MeanShiftThread implements Runnable{
 //			LOGGER.info("iterazione: " + i);
 			for (int j = 0; j < chunkSize; j++) {
 				shiftedPoints.set(j, this.shiftPoint(shiftedPoints.get(j)));
+//				When it's the last iteration of the algorithm store the points inside the shared list
 				if (i == this.maxIter - 1) {
 					resultPoints.set(startChunk + j, shiftedPoints.get(j));
 				}
@@ -171,7 +172,7 @@ public class MeanShiftThread implements Runnable{
 				shiftedX.set(j, shiftedPoint[0]);
 				shiftedY.set(j, shiftedPoint[1]);
 				shiftedZ.set(j, shiftedPoint[2]);
-				
+//				When it's the last iteration of the algorithm store the points inside the shared list
 				if (i == this.maxIter - 1) {
 					resultPointsSoA.getD1().set(startChunk + j, shiftedPoint[0]);
 					resultPointsSoA.getD2().set(startChunk + j, shiftedPoint[1]);
@@ -183,6 +184,7 @@ public class MeanShiftThread implements Runnable{
 
 	@Override
 	public void run() {
+//		Calculate the chunk for the thread. The chunks are evenly distributed between threads. max variance is 1
 		int numberOfElements = isAoS ? originPoints.size() : originPointsSoA.size();
 		
 		int minElementsPerThread = numberOfElements / nThreads;
@@ -198,9 +200,11 @@ public class MeanShiftThread implements Runnable{
 		}
 		int endChunk = startChunk + chunkSize;
 		
+//		Apply one of the algorithms based on a flag defined in the constructor
 		if (isAoS) algorithmAoS(chunkSize, startChunk, endChunk);
 		else algorithmSoA(chunkSize, startChunk, endChunk);
 		
+//		Signal the completion of the work
 		ph.arriveAndDeregister();
 	}
 }

@@ -66,6 +66,7 @@ public class PixelsExtractionThread implements Runnable {
 		int height = raster.getHeight();
 		int width = raster.getWidth();
 		
+//		Calculate the chunk of the matrix of the image for the thread. The matrix is split by columns and the chunk is evenly distributed between threads. max variance is 1
 		int numberOfElements = width;
 		int minElementsPerThread = numberOfElements / nThreads;
 		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
@@ -80,6 +81,7 @@ public class PixelsExtractionThread implements Runnable {
 		}
 		int endChunk = startChunk + chunkSize;
 		
+//		Based on a flag defined in the constructor apply one of the methods
 		if(isAoS) extractAoS(height, width, startChunk, endChunk);
 		else extractSoA(height, width, startChunk, endChunk);
 						

@@ -53,9 +53,14 @@ public class App
 	    	for (int i = 0; i < ITER; i++) {
 	    		long startTime = System.currentTimeMillis();
 
+//	    		Extract list LUV points from image 
 	    		List<Point<Double>> luvPoints = ip.extractLUVPoints();
+
+//	    		Start the algorithm with a list of LUV points and some parameters
 	    		MeanShift meanShift = new MeanShift(BANDWIDTH, ALGORITHM_ITER, luvPoints);
 	    		shiftedPoints = meanShift.meanShiftAlgorithm();
+
+//	    		Create a buffered image with the shifted points
 	    		ip.renderImageFromLUV(shiftedPoints);
 	    	
 	    		long endTime = System.currentTimeMillis();
@@ -67,7 +72,11 @@ public class App
 	    	
 	    	str.append("_Sequential_AoS").append(".jpg");
 	
+//	    	Create a JPG image with the shifted points and save it on a given path
 //	    	ip.renderImageFromLUV(shiftedPoints, str.toString());
+	    	
+//	    	Remove from the string that is used to name the JPG image the part specific to this if statement
+	    	str.delete(defaultStrSize, str.length());
     	}
     	
 //	    Sequential SoA version
@@ -80,9 +89,14 @@ public class App
 	    	for (int i = 0; i < ITER; i++) {
 	    		long startTime = System.currentTimeMillis();
 
+//	    		Extract LUV points from an image as a structure of arrays
 	    		PointsSoA<Double> luvPointsSoA = ip.extractLUVPointsSoA();
+
+//	    		Start the algorithm with the LUV points and some parameters
 	    		MeanShift meanShift = new MeanShift(BANDWIDTH, ALGORITHM_ITER, luvPointsSoA);
 	    		shiftedPoints = meanShift.meanShiftAlgorithmSoA();
+	    		
+//	    		Create a buffered image with the shifted points
 	    		ip.renderImageSoAFromLUV(shiftedPoints);
 	    	
 	    		long endTime = System.currentTimeMillis();
@@ -92,7 +106,11 @@ public class App
 	    	
 	    	str.append("_Sequential_SoA").append(".jpg");
 	
+//	    	Create a JPG image with the shifted points and save it on a given path
 //	    	ip.renderImageSoAFromLUV(shiftedPoints, str.toString());
+	    	
+//	    	Remove from the string that is used to name the JPG image the part specific to this if statement
+	    	str.delete(defaultStrSize, str.length());
     	}
 		
 //		Parallel version AoS
@@ -104,42 +122,51 @@ public class App
     		
 			for (int k = 0; k < ITER; k++) {
 				long startTime = System.currentTimeMillis();
-				    	
+				
+//				Initialize phaser and executor with a fixed pool of threads
 				Phaser ph = new Phaser(1);
 				ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
 				
+//				Get the raster of the image
 	        	Raster raster = ip.getRaster();
 	
-//	        	List<Point<Integer>> rgbShiftedPoints = new ArrayList<>();
+//	        	Initialize the shared list of LUV points of the image and the shared list where it'll be stored the shifted points
 	        	List<Point<Double>> luvPoints = new ArrayList<>();
 	        	List<Point<Double>> resultPoints = new ArrayList<>();
 	        	for (int i = 0; i < raster.getHeight() * raster.getWidth(); i++) {
 	        		luvPoints.add(new Point<>(0.0, 0.0, 0.0));
-	        		resultPoints.add(new Point<Double>(0.0, 0.0, 0.0));
-//	        		rgbShiftedPoints.add(new Point<>(0, 0, 0));
+	        		resultPoints.add(new Point<>(0.0, 0.0, 0.0));
 	        	}
 	        	
+//	        	Start threads to extract the LUV pixels of the image that will be stored in luvPoints
 	        	for (int i = 0; i < N_THREAD; i++) {
 	        		executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPoints, ph));
 				}
 
+//	        	Wait for threads to finish their work
 	        	ph.arriveAndAwaitAdvance();
 		    		
+//	        	Start threads to apply the mean shift algorithm to the list of LUV points with some parameters
 				for (int i = 0; i < N_THREAD; i++) {
 					executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, resultPoints, ph));
 				}
 				
+//	        	Wait for threads to finish their work
 				ph.arriveAndAwaitAdvance();
-							
+						
+//				Initialize a buffered image for the shifted points
 				resultImage = new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
 				
+//				Start threads to create a buffered image from the shifted points
 				for (int i = 0; i < N_THREAD; i++) {
 					executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, resultPoints, ph));
 				}
 				
+//				Wait for thread to finish their work and unregister from the phaser
 				ph.arriveAndAwaitAdvance();
 				ph.arriveAndDeregister();
 		
+//				shutdown the executor
 				executor.shutdown();
 				try {
 				    if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -159,9 +186,11 @@ public class App
 			LOGGER.info("Parallel AoS version took " + (allTimes / ITER) + " milliseconds");
 			
 	    	str.append("_Parallel_AoS").append("_").append(N_THREAD).append("-Threads").append(".jpg");
-		    	
+
+//	    	Create a JPG image with the shifted points and save it on the given path
 	    	ip.write(resultImage, str.toString());
 	    	
+//	    	Remove from the string that is used to name the JPG image the part specific to this if statement
 	    	str.delete(defaultStrSize, str.length());
     	}
     	
@@ -175,19 +204,20 @@ public class App
 	    	for (int k = 0; k < ITER; k++) {
 	    		long startTime = System.currentTimeMillis();
 	    		
+//				Initialize phaser and executor with a fixed pool of threads
 	    		Phaser ph = new Phaser(1);
 	        	ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
 	    		
+//				Get the raster of the image
 	        	Raster raster = ip.getRaster();
 		    	
+//	        	Initialize the shared structure of arrays of LUV points of the image and the shared structure of arrays where it'll be stored the shifted points
 	        	ArrayList<Double> d1 = new ArrayList<>();
 	        	ArrayList<Double> d2 = new ArrayList<>();
 	        	ArrayList<Double> d3 = new ArrayList<>();
-	        	
 		    	ArrayList<Double> resultD1 = new ArrayList<>();
 		    	ArrayList<Double> resultD2 = new ArrayList<>();
 		    	ArrayList<Double> resultD3 = new ArrayList<>();
-		    	
 		    	for (int i = 0; i < raster.getWidth() * raster.getHeight(); i++) {
 		    		d1.add(0.0);
 		    		d2.add(0.0);
@@ -196,31 +226,38 @@ public class App
 		    		resultD2.add(0.0);
 		    		resultD3.add(0.0);
 		    	}
-		    	
 		    	PointsSoA<Double> luvPointsSoA = new PointsSoA<>(d1, d2, d3);
 		    	PointsSoA<Double> resultPointsSoA = new PointsSoA<>(resultD1, resultD2, resultD3);
 		    	
+//	        	Start threads to extract the LUV pixels of the image that will be stored in luvPointsSoA
 		    	for (int i = 0; i < N_THREAD; i++) {
 	        		executor.execute(new PixelsExtractionThread(i, N_THREAD, raster, luvPointsSoA, ph));
 				}
 
+//	        	Wait for threads to finish their work
 	        	ph.arriveAndAwaitAdvance();
 	    		
+//	        	Start threads to apply the mean shift algorithm to the structure of arrays of LUV points with some parameters
 				for (int i = 0; i < N_THREAD; i++) {
 					executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPointsSoA, resultPointsSoA, ph));
 				}
 				
+//	        	Wait for threads to finish their work
 				ph.arriveAndAwaitAdvance();
 				
+//				Initialize a buffered image for the shifted points stored as structure of arrays
 				resultImage = new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
 				
+//				Start threads to create a buffered image from the shifted points
 				for (int i = 0; i < N_THREAD; i++) {
 					executor.execute(new ImageRenderThread(i, N_THREAD, resultImage, resultPointsSoA, ph));
 				}
 				
+//	        	Wait for threads to finish their work and unregister from the phaser
 				ph.arriveAndAwaitAdvance();					
 				ph.arriveAndDeregister();
 				
+//				shutdown the executor
 				executor.shutdown();
 				try {
 				    if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -239,8 +276,10 @@ public class App
 	    	
 	    	LOGGER.info("Parallel SoA version took " + (allTimes / ITER) + " milliseconds");
 	    	
+//	    	Create a JPG image with the shifted points stored as a structure of arrays and save it on the given path
 	    	str.append("_Parallel_SoA").append("_").append(N_THREAD).append("-Threads").append(".jpg");
 	    	
+//	    	Remove from the string that is used to name the JPG image the part specific to this if statement
 	    	ip.write(resultImage, str.toString());
     	}
 	}

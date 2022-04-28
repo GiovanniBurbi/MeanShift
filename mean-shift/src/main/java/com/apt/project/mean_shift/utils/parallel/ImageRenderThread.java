@@ -59,9 +59,9 @@ public class ImageRenderThread implements Runnable{
 	}
 
 	@Override
-	public void run() {		
-		int width = image.getWidth();
-		
+	public void run() {	
+		int width = image.getWidth();		
+//		Calculate the chunk of the matrix of the image for the thread. The matrix is split by columns and the chunk is evenly distributed between threads. max variance is 1
 		int numberOfElements = width * image.getHeight();
 		int minElementsPerThread = numberOfElements / nThreads;
 		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
@@ -76,6 +76,7 @@ public class ImageRenderThread implements Runnable{
 		}
 		int endChunk = startChunk + chunkSize;
 		
+//		Based on a flag defined in the constructor apply one of the methods
 		if (isAoS) renderAoS(width, startChunk, endChunk);
 		else renderSoA(width, startChunk, endChunk);
 		
