@@ -25,11 +25,11 @@ public class App
 	private static final boolean SEQUENTIAL_AOS_VERSION = false;
 	private static final boolean SEQUENTIAL_SOA_VERSION = false;
 	private static final boolean PARALLEL_AOS_VERSION = false;
-	private static final boolean PARALLEL_SOA_VERSION = true;
-	private static final int ITER = 1;
-	private static final int N_THREAD = 4;
+	private static final boolean PARALLEL_SOA_VERSION = false;
+	private static final int ITER = 3;
+	private static final int N_THREAD = 2;
 	private static final float BANDWIDTH = 12f;
-	private static final int ALGORITHM_ITER = 1;
+	private static final int ALGORITHM_ITER = 6;
 
 	
 	public static void main( String[] args ) {
@@ -73,7 +73,7 @@ public class App
 	    	str.append("_Sequential_AoS").append(".jpg");
 	
 //	    	Create a JPG image with the shifted points and save it on a given path
-//	    	ip.renderImageFromLUV(shiftedPoints, str.toString());
+	    	ip.renderImageFromLUV(shiftedPoints, str.toString());
 	    	
 //	    	Remove from the string that is used to name the JPG image the part specific to this if statement
 	    	str.delete(defaultStrSize, str.length());
@@ -107,7 +107,7 @@ public class App
 	    	str.append("_Sequential_SoA").append(".jpg");
 	
 //	    	Create a JPG image with the shifted points and save it on a given path
-//	    	ip.renderImageSoAFromLUV(shiftedPoints, str.toString());
+	    	ip.renderImageSoAFromLUV(shiftedPoints, str.toString());
 	    	
 //	    	Remove from the string that is used to name the JPG image the part specific to this if statement
 	    	str.delete(defaultStrSize, str.length());
