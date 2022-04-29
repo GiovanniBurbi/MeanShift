@@ -24,12 +24,12 @@ public class App
 	private static final String SOURCE_IMAGE= "benzina200x150";
 	private static final boolean SEQUENTIAL_AOS_VERSION = false;
 	private static final boolean SEQUENTIAL_SOA_VERSION = false;
-	private static final boolean PARALLEL_AOS_VERSION = true;
+	private static final boolean PARALLEL_AOS_VERSION = false;
 	private static final boolean PARALLEL_SOA_VERSION = true;
 	private static final int ITER = 1;
 	private static final int N_THREAD = 4;
 	private static final float BANDWIDTH = 12f;
-	private static final int ALGORITHM_ITER = 5;
+	private static final int ALGORITHM_ITER = 1;
 
 	
 	public static void main( String[] args ) {
@@ -39,7 +39,7 @@ public class App
 		ImageParser ip = new ImageParser(src.toString());
 		
 		StringBuilder str = new StringBuilder();
-		str.append("results/").append(SOURCE_IMAGE).append("_BW").append(BANDWIDTH).append("_ITER").append(ALGORITHM_ITER);
+		str.append(SOURCE_IMAGE).append("_BW").append(BANDWIDTH).append("_ITER").append(ALGORITHM_ITER);
 		int defaultStrSize = str.length();
 
 //    	Sequential AoS version

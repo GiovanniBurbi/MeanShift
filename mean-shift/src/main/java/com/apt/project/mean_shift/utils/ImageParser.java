@@ -88,7 +88,7 @@ public class ImageParser {
 	}
 	
 //	Method to render an image from a list of RGB points and write it as a JPG image in the specified path.
-	public void renderImage(List<Point<Integer>> points, String path) {
+	public void renderImage(List<Point<Integer>> points, String imageName) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			Point<Integer> point = points.get(i);
@@ -98,16 +98,11 @@ public class ImageParser {
 	        outputImage.setRGB( i % width, i / width, rgb);
 		}
 		
-    	File outputFile = new File(path);
-    	try {
-			ImageIO.write(outputImage, "jpg", outputFile);
-		} catch (IOException e) {
-			LOGGER.log(Level.WARNING, e.getMessage(), e);
-		}
+    	write(outputImage, imageName);
 	}
 	
 //	Method to render an image from a list of RGB points and write it as a JPG image in the specified path.
-	public void renderImageFromLUV(List<Point<Double>> points, String path) {
+	public void renderImageFromLUV(List<Point<Double>> points, String imageName) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			Point<Integer> point = ColorConverter.convertToRGBPoint(points.get(i));
@@ -117,12 +112,7 @@ public class ImageParser {
 	        outputImage.setRGB( i % width, i / width, rgb);
 		}
 		
-    	File outputFile = new File(path);
-    	try {
-			ImageIO.write(outputImage, "jpg", outputFile);
-		} catch (IOException e) {
-			LOGGER.log(Level.WARNING, e.getMessage(), e);
-		}
+    	write(outputImage, imageName);
 	}
 	
 //	Method that creates an image as a bufferedImage from a list of RGB points
@@ -150,7 +140,7 @@ public class ImageParser {
 	}
 	
 //	Method to render an image from RGB points stored as a structure of arrays and write it as a JPG image in the path specified.
-	public void renderImageSoA(PointsSoA<Integer> points, String path) {
+	public void renderImageSoA(PointsSoA<Integer> points, String imageName) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			int rgb = points.getD1().get(i);
@@ -159,12 +149,7 @@ public class ImageParser {
 	        outputImage.setRGB( i % width, i / width, rgb);
 		}
 		
-    	File outputFile = new File(path);
-    	try {
-			ImageIO.write(outputImage, "jpg", outputFile);
-		} catch (IOException e) {
-			LOGGER.log(Level.WARNING, e.getMessage(), e);
-		}
+    	write(outputImage, imageName);
 	}
 	
 //	Method that creates an image as a bufferedImage from RGB points stored as structure of arrays
@@ -191,7 +176,7 @@ public class ImageParser {
 	}
 	
 //	Method that creates an image as a bufferedImage from RGB points stored as structure of arrays and write it as a JPG image in the path specified.
-	public void renderImageSoAFromLUV(PointsSoA<Double> points, String path) {
+	public void renderImageSoAFromLUV(PointsSoA<Double> points, String imageName) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			int[] point = ColorConverter.convertToRGBPoint(new Double[]{points.getD1().get(i), points.getD2().get(i), points.getD3().get(i)});
@@ -201,17 +186,19 @@ public class ImageParser {
 	        outputImage.setRGB( i % width, i / width, rgb);
 		}
 		
-		File outputFile = new File(path);
-    	try {
-			ImageIO.write(outputImage, "jpg", outputFile);
-		} catch (IOException e) {
-			LOGGER.log(Level.WARNING, e.getMessage(), e);
-		}
+		write(outputImage, imageName);
 	}
 	
 //	Method to write an JPG image from a bufferedImage in the given path
-	public void write(BufferedImage image, String path) {
-		File outputFile = new File(path);
+	public void write(BufferedImage image, String imageName) {
+		String directoryName = "results";
+		File directory = new File(directoryName);
+		
+		if(!directory.exists()) {
+			directory.mkdir();
+		}
+		
+		File outputFile = new File(directoryName, imageName);
     	try {
 			ImageIO.write(image, "jpg", outputFile);
 		} catch (IOException e) {
