@@ -41,6 +41,7 @@ public class App
 		StringBuilder str = new StringBuilder();
 		str.append(SOURCE_IMAGE).append("_BW").append(BANDWIDTH).append("_ITER").append(ALGORITHM_ITER);
 		int defaultStrSize = str.length();
+		
 
 //    	Sequential AoS version
     	
