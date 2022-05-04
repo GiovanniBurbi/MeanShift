@@ -2,6 +2,8 @@ package com.apt.project.mean_shift;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -11,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import com.apt.project.mean_shift.algorithm.MeanShift;
-import com.apt.project.mean_shift.algorithm.parallel.MeanShiftThread;
+import com.apt.project.mean_shift.algorithm.parallel.MeanShiftThreadRunnable;
 import com.apt.project.mean_shift.model.Point;
 import com.apt.project.mean_shift.model.PointsSoA;
 import com.apt.project.mean_shift.utils.ImageParser;
@@ -21,13 +23,13 @@ import com.apt.project.mean_shift.utils.parallel.PixelsExtractionThread;
 public class App 
 {
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-	private static final String SOURCE_IMAGE= "benzina200x150";
+	private static final String SOURCE_IMAGE= "benzina400x300";
 	private static final boolean SEQUENTIAL_AOS_VERSION = false;
 	private static final boolean SEQUENTIAL_SOA_VERSION = false;
 	private static final boolean PARALLEL_AOS_VERSION = false;
-	private static final boolean PARALLEL_SOA_VERSION = false;
+	private static final boolean PARALLEL_SOA_VERSION = true;
 	private static final int ITER = 3;
-	private static final int N_THREAD = 2;
+	private static final int N_THREAD = 12;
 	private static final float BANDWIDTH = 12f;
 	private static final int ALGORITHM_ITER = 6;
 
@@ -51,8 +53,9 @@ public class App
 
 	    	long allTimes = 0;
 	    	
+	    	
 	    	for (int i = 0; i < ITER; i++) {
-	    		long startTime = System.currentTimeMillis();
+	    		Instant start = Instant.now();
 
 //	    		Extract list LUV points from image 
 	    		List<Point<Double>> luvPoints = ip.extractLUVPoints();
@@ -64,8 +67,9 @@ public class App
 //	    		Create a buffered image with the shifted points
 	    		ip.renderImageFromLUV(shiftedPoints);
 	    	
-	    		long endTime = System.currentTimeMillis();
-	    		allTimes += endTime - startTime;
+	    		Instant end = Instant.now();
+	    		allTimes += Duration.between(start, end).toMillis();
+	    		LOGGER.info("End iteration " + (i + 1));
 	    		
 	    	}
 	    	
@@ -88,7 +92,7 @@ public class App
 	    	long allTimes = 0;
 	    	
 	    	for (int i = 0; i < ITER; i++) {
-	    		long startTime = System.currentTimeMillis();
+	    		Instant start = Instant.now();
 
 //	    		Extract LUV points from an image as a structure of arrays
 	    		PointsSoA<Double> luvPointsSoA = ip.extractLUVPointsSoA();
@@ -100,8 +104,9 @@ public class App
 //	    		Create a buffered image with the shifted points
 	    		ip.renderImageSoAFromLUV(shiftedPoints);
 	    	
-	    		long endTime = System.currentTimeMillis();
-	    		allTimes += endTime - startTime;
+	    		Instant end = Instant.now();
+	    		allTimes += Duration.between(start, end).toMillis();
+	    		LOGGER.info("End iteration " + (i + 1));
 	    	}
 	    	LOGGER.info("Sequential SoA version took " + (allTimes / ITER) + " milliseconds");
 	    	
@@ -122,7 +127,7 @@ public class App
 	    	long allTimes = 0;
     		
 			for (int k = 0; k < ITER; k++) {
-				long startTime = System.currentTimeMillis();
+				Instant start = Instant.now();
 				
 //				Initialize phaser and executor with a fixed pool of threads
 				Phaser ph = new Phaser(1);
@@ -149,7 +154,7 @@ public class App
 		    		
 //	        	Start threads to apply the mean shift algorithm to the list of LUV points with some parameters
 				for (int i = 0; i < N_THREAD; i++) {
-					executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, resultPoints, ph));
+					executor.execute(new MeanShiftThreadRunnable(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPoints, resultPoints, ph));
 				}
 				
 //	        	Wait for threads to finish their work
@@ -180,8 +185,9 @@ public class App
 				    Thread.currentThread().interrupt();
 				}
 		
-				long endTime = System.currentTimeMillis();
-				allTimes += endTime - startTime;
+				Instant end = Instant.now();
+				allTimes += Duration.between(start, end).toMillis();
+				LOGGER.info("End iteration " + (k + 1));
 			}
 			
 			LOGGER.info("Parallel AoS version took " + (allTimes / ITER) + " milliseconds");
@@ -203,7 +209,7 @@ public class App
 	    	long allTimes = 0;
 	    	
 	    	for (int k = 0; k < ITER; k++) {
-	    		long startTime = System.currentTimeMillis();
+	    		Instant start = Instant.now();
 	    		
 //				Initialize phaser and executor with a fixed pool of threads
 	    		Phaser ph = new Phaser(1);
@@ -240,7 +246,7 @@ public class App
 	    		
 //	        	Start threads to apply the mean shift algorithm to the structure of arrays of LUV points with some parameters
 				for (int i = 0; i < N_THREAD; i++) {
-					executor.execute(new MeanShiftThread(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPointsSoA, resultPointsSoA, ph));
+					executor.execute(new MeanShiftThreadRunnable(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, luvPointsSoA, resultPointsSoA, ph));
 				}
 				
 //	        	Wait for threads to finish their work
@@ -271,8 +277,9 @@ public class App
 				    Thread.currentThread().interrupt();
 				}
 	
-				long endTime = System.currentTimeMillis();
-				allTimes += endTime - startTime;
+				Instant end = Instant.now();
+				allTimes += Duration.between(start, end).toMillis();
+				LOGGER.info("End iteration " + (k + 1));
 	    	}
 	    	
 	    	LOGGER.info("Parallel SoA version took " + (allTimes / ITER) + " milliseconds");

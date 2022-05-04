@@ -8,9 +8,9 @@ import java.util.logging.Logger;
 import com.apt.project.mean_shift.model.Point;
 import com.apt.project.mean_shift.model.PointsSoA;
 
-public class MeanShiftThread implements Runnable{
+public class MeanShiftThreadRunnable implements Runnable{
 	
-	private static final Logger LOGGER = Logger.getLogger(MeanShiftThread.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(MeanShiftThreadRunnable.class.getName());
 	
 	private int tid;
 	private int nThreads;
@@ -23,7 +23,7 @@ public class MeanShiftThread implements Runnable{
 	private Phaser ph;
 	private boolean isAoS;
 	
-	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
+	public MeanShiftThreadRunnable(int tid, int nThreads, int maxIter, float bandwidth, List<Point<Double>> originPoints,
 			List<Point<Double>> resultPoints, Phaser ph) {
 		this.tid = tid;
 		this.nThreads = nThreads;
@@ -36,7 +36,7 @@ public class MeanShiftThread implements Runnable{
 		ph.register();
 	}
 	
-	public MeanShiftThread(int tid, int nThreads, int maxIter, float bandwidth, PointsSoA<Double> originPoints,
+	public MeanShiftThreadRunnable(int tid, int nThreads, int maxIter, float bandwidth, PointsSoA<Double> originPoints,
 			PointsSoA<Double> resultPoints, Phaser ph) {
 		this.tid = tid;
 		this.nThreads = nThreads;
@@ -141,7 +141,7 @@ public class MeanShiftThread implements Runnable{
 
 //		algorithm main loop
 		for (int i = 0; i < this.maxIter; i++) {
-//			LOGGER.info("iterazione: " + i);
+//			LOGGER.info("iteration: " + i);
 			for (int j = 0; j < chunkSize; j++) {
 				shiftedPoints.set(j, this.shiftPoint(shiftedPoints.get(j)));
 //				When it's the last iteration of the algorithm store the points inside the shared list
@@ -166,7 +166,7 @@ public class MeanShiftThread implements Runnable{
 		
 //		algorithm main loop
 		for (int i = 0; i < this.maxIter; i++) {
-//			LOGGER.info("iterazione: " + i);
+//			LOGGER.info("iteration: " + i);
 			for (int j = 0; j < chunkSize; j++) {
 				Double[] shiftedPoint = shiftPointSoA(shiftedX.get(j), shiftedY.get(j), shiftedZ.get(j));
 				shiftedX.set(j, shiftedPoint[0]);
