@@ -165,6 +165,25 @@ public class ImageParser {
 		}
 	}
 	
+	public void renderImageFromLUVChunks(List<List<Point<Double>>> pointsList) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		int start = 0;
+
+		for(int i = 0; i < pointsList.size(); i++) {
+			List<Point<Double>> points = pointsList.get(i);
+			int chunkSize = points.size();
+			int chunkW = chunkSize/height;
+			for (int j = 0; j < chunkSize; j++) {
+				Point<Integer> point = ColorConverter.convertToRGBPoint(points.get(j));
+				int rgb = point.getD1();
+		        rgb = (rgb << 8) + point.getD2();
+		        rgb = (rgb << 8) + point.getD3();
+				outputImage.setRGB(start + j % chunkW, j / chunkW , rgb);
+			}
+			start += chunkW;
+		}
+	}
+	
 	public void renderImageFromLUV(List<Point<Double>> points, String imageName, int nThreads) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		int numberOfElements = width;
@@ -188,6 +207,27 @@ public class ImageParser {
 		        rgb = (rgb << 8) + point.getD3();
 				outputImage.setRGB(start + k % maxIndex, k / maxIndex , rgb);					
 			}
+		}
+		
+		write(outputImage, imageName);
+	}
+	
+	public void renderImageFromLUVChunks(List<List<Point<Double>>> pointsList, String imageName) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		int start = 0;
+		
+		for(int i = 0; i < pointsList.size(); i++) {
+			List<Point<Double>> points = pointsList.get(i);
+			int chunkSize = points.size();
+			int chunkW = chunkSize/height;
+			for (int j = 0; j < chunkSize; j++) {
+				Point<Integer> point = ColorConverter.convertToRGBPoint(points.get(j));
+				int rgb = point.getD1();
+		        rgb = (rgb << 8) + point.getD2();
+		        rgb = (rgb << 8) + point.getD3();
+				outputImage.setRGB(start + j % chunkW, j / chunkW , rgb);
+			}
+			start += chunkW;
 		}
 		
 		write(outputImage, imageName);

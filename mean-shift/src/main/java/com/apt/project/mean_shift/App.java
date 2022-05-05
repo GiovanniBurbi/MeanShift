@@ -28,7 +28,7 @@ import com.apt.project.mean_shift.utils.parallel.PixelsExtractionThreadRunnable;
 public class App 
 {
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-	private static final String SOURCE_IMAGE= "benzina120x90";
+	private static final String SOURCE_IMAGE= "benzina200x150";
 	private static final boolean SEQUENTIAL_AOS_VERSION = false;
 	private static final boolean SEQUENTIAL_SOA_VERSION = false;
 	private static final boolean PARALLEL_AOS_VERSION_RUNNABLE = false;
@@ -299,7 +299,7 @@ public class App
     	
     	if(PARALLEL_AOS_VERSION_CALLABLE) {
 //    		List of resulted shifted points
-    		List<Point<Double>> shiftedPoints = new ArrayList<>();
+    		List<List<Point<Double>>> shiftedPoints = null;
 	    	long allTimes = 0;
     		
 			for (int k = 0; k < ITER; k++) {
@@ -329,14 +329,15 @@ public class App
 					Thread.currentThread().interrupt();
 				}
 		    	
-//		    	Create a list to hold the LUV points extracted from the image
-		    	List<Point<Double>> originPoints = new ArrayList<>();
+//		    	Create a list to hold the chunks of LUV points extracted from the image
+		    	List<List<Point<Double>>> originPoints = new ArrayList<>();
 		    	
 //		    	Wait for the completion of the threads to get the return value and add it to a list
 		    	for (Future<List<Point<Double>>> future : extractionFuturesList) {
 		    		try {
 						List<Point<Double>> originPointChunk = future.get();
-						originPoints.addAll(originPointChunk);
+						originPoints.add(originPointChunk);
+
 					} catch (InterruptedException|ExecutionException e) {
 						LOGGER.log(Level.WARNING, e.getMessage(), e);
 						Thread.currentThread().interrupt();
@@ -347,7 +348,7 @@ public class App
 		    	List<MeanShiftThreadAoS> meanShiftThreads = new ArrayList<>();
 //				Instantiate the threads passing the parameters
 				for (int i = 0; i < N_THREAD; i++) {
-					MeanShiftThreadAoS meanShiftThread = new MeanShiftThreadAoS(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, originPoints);
+					MeanShiftThreadAoS meanShiftThread = new MeanShiftThreadAoS(i, ALGORITHM_ITER, BANDWIDTH, originPoints);
 					meanShiftThreads.add(meanShiftThread);
 				}
 				
@@ -361,10 +362,12 @@ public class App
 					Thread.currentThread().interrupt();
 				}
 		    	
+		    	shiftedPoints = new ArrayList<>();
+		    	
 		    	for (Future<List<Point<Double>>> future : algorithmFuturesList) {
 					try {
 						List<Point<Double>> shiftedPointChunk = future.get();
-						shiftedPoints.addAll(shiftedPointChunk);
+						shiftedPoints.add(shiftedPointChunk);
 					} catch (InterruptedException|ExecutionException e) {
 						LOGGER.log(Level.WARNING, e.getMessage(), e);
 						Thread.currentThread().interrupt();
@@ -373,9 +376,6 @@ public class App
 		    	
 //		    	shutdown the executor
 				executor.shutdown();
-						
-//	    		render image without create a JPG image
-		    	ip.renderImageFromLUV(shiftedPoints, N_THREAD);
 		    	
 //		    	Verify termination of the executor
 				try {
@@ -389,6 +389,9 @@ public class App
 				    Thread.currentThread().interrupt();
 				}
 		
+//	    		render image without create a JPG image
+		    	ip.renderImageFromLUVChunks(shiftedPoints);
+		    	
 				Instant end = Instant.now();
 				allTimes += Duration.between(start, end).toMillis();
 				LOGGER.info("End iteration " + (k + 1));
@@ -399,7 +402,7 @@ public class App
 	    	str.append("_Parallel_AoS").append("_").append(N_THREAD).append("-Threads").append("_").append("Callable").append(".jpg");
 
 //	    	Create a JPG image with the shifted points and save it on the given path
-	    	ip.renderImageFromLUV(shiftedPoints, str.toString(), N_THREAD);
+	    	ip.renderImageFromLUVChunks(shiftedPoints, str.toString());
 	    	
 //	    	Remove from the string that is used to name the JPG image the part specific to this if statement
 	    	str.delete(defaultStrSize, str.length());
