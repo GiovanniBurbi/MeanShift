@@ -15,7 +15,6 @@ public class PixelsExtractionThreadSoA implements Callable<PointsSoA<Double>> {
 	private Raster raster;
 
 	public PixelsExtractionThreadSoA(int tid, int nThreads, Raster raster) {
-		super();
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.raster = raster;

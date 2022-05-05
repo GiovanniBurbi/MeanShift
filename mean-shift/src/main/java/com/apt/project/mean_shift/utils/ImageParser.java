@@ -269,6 +269,32 @@ public class ImageParser {
 		}
 	}
 	
+	public void renderImageSoAFromLUV(PointsSoA<Double> points, int nThreads) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		int numberOfElements = width;
+		int minElementsPerThread = numberOfElements / nThreads;
+		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
+		int maxIndex;
+		int start;
+		for (int i = 0; i < nThreads; i++) {
+			if (i < threadsWithMoreElements) {
+				maxIndex = minElementsPerThread + 1;
+				start = i * maxIndex;
+			}
+			else {
+				maxIndex = minElementsPerThread;
+				start = threadsWithMoreElements * (maxIndex + 1) + (i - threadsWithMoreElements) * maxIndex;
+			}
+			for (int k = 0; k < maxIndex*height; k++) {
+				int[] point = ColorConverter.convertToRGBPoint(new Double[]{points.getD1().get(start*height + k), points.getD2().get(start*height + k), points.getD3().get(start*height + k)});
+				int rgb = point[0];
+		        rgb = (rgb << 8) + point[1]; 
+		        rgb = (rgb << 8) + point[2];
+				outputImage.setRGB(start + k % maxIndex, k / maxIndex , rgb);					
+			}
+		}
+	}
+	
 //	Method that creates an image as a bufferedImage from RGB points stored as structure of arrays and write it as a JPG image in the path specified.
 	public void renderImageSoAFromLUV(PointsSoA<Double> points, String imageName) {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
@@ -278,6 +304,34 @@ public class ImageParser {
 	        rgb = (rgb << 8) + point[1]; 
 	        rgb = (rgb << 8) + point[2];
 	        outputImage.setRGB( i % width, i / width, rgb);
+		}
+		
+		write(outputImage, imageName);
+	}
+	
+	public void renderImageSoAFromLUV(PointsSoA<Double> points, String imageName, int nThreads) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		int numberOfElements = width;
+		int minElementsPerThread = numberOfElements / nThreads;
+		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
+		int maxIndex;
+		int start;
+		for (int i = 0; i < nThreads; i++) {
+			if (i < threadsWithMoreElements) {
+				maxIndex = minElementsPerThread + 1;
+				start = i * maxIndex;
+			}
+			else {
+				maxIndex = minElementsPerThread;
+				start = threadsWithMoreElements * (maxIndex + 1) + (i - threadsWithMoreElements) * maxIndex;
+			}
+			for (int k = 0; k < maxIndex*height; k++) {
+				int[] point = ColorConverter.convertToRGBPoint(new Double[]{points.getD1().get(start*height + k), points.getD2().get(start*height + k), points.getD3().get(start*height + k)});
+				int rgb = point[0];
+		        rgb = (rgb << 8) + point[1]; 
+		        rgb = (rgb << 8) + point[2];
+				outputImage.setRGB(start + k % maxIndex, k / maxIndex , rgb);					
+			}
 		}
 		
 		write(outputImage, imageName);

@@ -14,13 +14,16 @@ public class MeanShiftThreadAoS implements Callable<List<Point<Double>>>{
 	private int tid;
 	private int maxIter;
 	private double kernelDen;
-	private List<List<Point<Double>>> originPointsList;
-	
-	public MeanShiftThreadAoS(int tid, int maxIter, float bandwidth,
-			List<List<Point<Double>>> originPointsList) {
+	private int nThreads;
+	private List<Point<Double>> originPoints;
+
+
+	public MeanShiftThreadAoS(int tid, int nThreads, int maxIter, float bandwidth,
+			List<Point<Double>> originPoints) {
 		this.tid = tid;
+		this.nThreads = nThreads;
 		this.maxIter = maxIter;
-		this.originPointsList = originPointsList;
+		this.originPoints = originPoints;
 		this.kernelDen = 2 * Math.pow(bandwidth, 2);
 	}
 
@@ -43,20 +46,17 @@ public class MeanShiftThreadAoS implements Callable<List<Point<Double>>>{
 		double shiftZ = 0;
 		double scaleFactor = 0;
 		
-		for(int i = 0; i < originPointsList.size(); i++) {
-			List<Point<Double>> originPointChunk = originPointsList.get(i);
-			for (Point<Double> point : originPointChunk) {
-				double dist = this.euclideanDistancePow2(p, point);
-				double weight = this.kernel(dist);
-				
-				// numerator
-				shiftX += point.getD1() * weight;
-				shiftY += point.getD2() * weight;
-				shiftZ += point.getD3() * weight;
-				
-				// denominator
-				scaleFactor += weight;
-			}
+		for (Point<Double> originPoint : originPoints) {
+			double dist = this.euclideanDistancePow2(p, originPoint);
+			double weight = this.kernel(dist);
+			
+			// numerator
+			shiftX += originPoint.getD1() * weight;
+			shiftY += originPoint.getD2() * weight;
+			shiftZ += originPoint.getD3() * weight;
+			
+			// denominator
+			scaleFactor += weight;
 		}
 		
 		if (scaleFactor == 0) {
@@ -71,18 +71,29 @@ public class MeanShiftThreadAoS implements Callable<List<Point<Double>>>{
 	}
 
 	@Override
-	public List<Point<Double>> call() throws Exception {		
+	public List<Point<Double>> call() throws Exception {
+//		Calculate the chunk for the thread. The chunks are evenly distributed between threads. max variance is 1
+		int numberOfElements = originPoints.size();
 		
-//		Get the list based on thread id
-		List<Point<Double>> originPointsChunk = originPointsList.get(tid);
-		int chunkSize = originPointsChunk.size();
+		int minElementsPerThread = numberOfElements / nThreads;
+		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
+		int chunkSize;
+		int startChunk;
+		if (tid < threadsWithMoreElements) {
+			chunkSize = minElementsPerThread + 1;
+			startChunk = tid * chunkSize;
+		} else {
+			chunkSize = minElementsPerThread;
+			startChunk = threadsWithMoreElements * (chunkSize + 1) + (tid - threadsWithMoreElements) * chunkSize;
+		}
+		int endChunk = startChunk + chunkSize;
 		
 //		Apply algorithm to chunk
-		List<Point<Double>> shiftedPoints = new ArrayList<>(chunkSize);
+		ArrayList<Point<Double>> shiftedPoints = new ArrayList<>(chunkSize);
 
 //		deep copy of origin points
-		for (int i = 0; i < chunkSize; i++) {
-			shiftedPoints.add(new Point<>(originPointsChunk.get(i)));
+		for (int i = startChunk; i < endChunk; i++) {
+			shiftedPoints.add(new Point<>(originPoints.get(i)));
 		}
 
 //		algorithm main loop
@@ -96,5 +107,4 @@ public class MeanShiftThreadAoS implements Callable<List<Point<Double>>>{
 		return shiftedPoints;
 
 	}
-
 }

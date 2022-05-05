@@ -18,23 +18,25 @@ import java.util.logging.Logger;
 import com.apt.project.mean_shift.algorithm.MeanShift;
 import com.apt.project.mean_shift.algorithm.parallel.MeanShiftThreadAoS;
 import com.apt.project.mean_shift.algorithm.parallel.MeanShiftThreadRunnable;
+import com.apt.project.mean_shift.algorithm.parallel.MeanShiftThreadSoA;
 import com.apt.project.mean_shift.model.Point;
 import com.apt.project.mean_shift.model.PointsSoA;
 import com.apt.project.mean_shift.utils.ImageParser;
 import com.apt.project.mean_shift.utils.parallel.ImageRenderThread;
 import com.apt.project.mean_shift.utils.parallel.PixelsExtractionThreadAoS;
 import com.apt.project.mean_shift.utils.parallel.PixelsExtractionThreadRunnable;
+import com.apt.project.mean_shift.utils.parallel.PixelsExtractionThreadSoA;
 
 public class App 
 {
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-	private static final String SOURCE_IMAGE= "benzina200x150";
+	private static final String SOURCE_IMAGE= "benzina120x90";
 	private static final boolean SEQUENTIAL_AOS_VERSION = false;
 	private static final boolean SEQUENTIAL_SOA_VERSION = false;
 	private static final boolean PARALLEL_AOS_VERSION_RUNNABLE = false;
 	private static final boolean PARALLEL_SOA_VERSION_RUNNABLE = false;
-	private static final boolean PARALLEL_AOS_VERSION_CALLABLE = true;
-	private static final boolean PARALLEL_SOA_VERSION_CALLABLE = false;
+	private static final boolean PARALLEL_AOS_VERSION_CALLABLE = false;
+	private static final boolean PARALLEL_SOA_VERSION_CALLABLE = true;
 	private static final int ITER = 3;
 	private static final int N_THREAD = 8;
 	private static final float BANDWIDTH = 12f;
@@ -90,6 +92,8 @@ public class App
 	    	str.delete(defaultStrSize, str.length());
     	}
     	
+// 		-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   	
+    	
 //	    Sequential SoA version
     	
     	if (SEQUENTIAL_SOA_VERSION) {
@@ -125,6 +129,8 @@ public class App
 	    	str.delete(defaultStrSize, str.length());
     	}
 		
+
+// 		-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   	
 //		Parallel version AoS
     	
 
@@ -207,6 +213,7 @@ public class App
 	    	str.delete(defaultStrSize, str.length());
     	}
     	
+// 		-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   	
     	
 //    	Parallel SoA
     	
@@ -297,9 +304,11 @@ public class App
 	    	ip.write(resultImage, str.toString());
     	}
     	
+// 		-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   	
+    	
     	if(PARALLEL_AOS_VERSION_CALLABLE) {
 //    		List of resulted shifted points
-    		List<List<Point<Double>>> shiftedPoints = null;
+    		List<Point<Double>> shiftedPoints = null;
 	    	long allTimes = 0;
     		
 			for (int k = 0; k < ITER; k++) {
@@ -330,13 +339,13 @@ public class App
 				}
 		    	
 //		    	Create a list to hold the chunks of LUV points extracted from the image
-		    	List<List<Point<Double>>> originPoints = new ArrayList<>();
+		    	List<Point<Double>> originPoints = new ArrayList<>();
 		    	
 //		    	Wait for the completion of the threads to get the return value and add it to a list
-		    	for (Future<List<Point<Double>>> future : extractionFuturesList) {
+		    	for(int i = extractionFuturesList.size() - 1; i >= 0; i--) {
 		    		try {
-						List<Point<Double>> originPointChunk = future.get();
-						originPoints.add(originPointChunk);
+						List<Point<Double>> originPointChunk = extractionFuturesList.get(i).get();
+						originPoints.addAll(0, originPointChunk);
 
 					} catch (InterruptedException|ExecutionException e) {
 						LOGGER.log(Level.WARNING, e.getMessage(), e);
@@ -348,7 +357,7 @@ public class App
 		    	List<MeanShiftThreadAoS> meanShiftThreads = new ArrayList<>();
 //				Instantiate the threads passing the parameters
 				for (int i = 0; i < N_THREAD; i++) {
-					MeanShiftThreadAoS meanShiftThread = new MeanShiftThreadAoS(i, ALGORITHM_ITER, BANDWIDTH, originPoints);
+					MeanShiftThreadAoS meanShiftThread = new MeanShiftThreadAoS(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, originPoints);
 					meanShiftThreads.add(meanShiftThread);
 				}
 				
@@ -364,15 +373,15 @@ public class App
 		    	
 		    	shiftedPoints = new ArrayList<>();
 		    	
-		    	for (Future<List<Point<Double>>> future : algorithmFuturesList) {
-					try {
-						List<Point<Double>> shiftedPointChunk = future.get();
-						shiftedPoints.add(shiftedPointChunk);
+		    	for(int i = extractionFuturesList.size() - 1; i >= 0; i--) {
+		    		try {
+						List<Point<Double>> shiftedPointChunk = algorithmFuturesList.get(i).get();
+						shiftedPoints.addAll(0, shiftedPointChunk);
 					} catch (InterruptedException|ExecutionException e) {
 						LOGGER.log(Level.WARNING, e.getMessage(), e);
 						Thread.currentThread().interrupt();
 					}
-				}
+		    	}
 		    	
 //		    	shutdown the executor
 				executor.shutdown();
@@ -390,7 +399,7 @@ public class App
 				}
 		
 //	    		render image without create a JPG image
-		    	ip.renderImageFromLUVChunks(shiftedPoints);
+				ip.renderImageFromLUV(shiftedPoints, N_THREAD);
 		    	
 				Instant end = Instant.now();
 				allTimes += Duration.between(start, end).toMillis();
@@ -402,14 +411,127 @@ public class App
 	    	str.append("_Parallel_AoS").append("_").append(N_THREAD).append("-Threads").append("_").append("Callable").append(".jpg");
 
 //	    	Create a JPG image with the shifted points and save it on the given path
-	    	ip.renderImageFromLUVChunks(shiftedPoints, str.toString());
+	    	ip.renderImageFromLUV(shiftedPoints, str.toString(), N_THREAD);
 	    	
 //	    	Remove from the string that is used to name the JPG image the part specific to this if statement
 	    	str.delete(defaultStrSize, str.length());
     	}
     	
+// 		-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   	
+    	
     	if(PARALLEL_SOA_VERSION_CALLABLE) {
+//    		Declare the object that will hold the final result
+	    	PointsSoA<Double> shiftedPoints = null;
+    		long allTimes = 0;
     		
+			for (int k = 0; k < ITER; k++) {
+				Instant start = Instant.now();
+				
+//				Initialize executor with a fixed pool of threads
+				ExecutorService executor = Executors.newFixedThreadPool(N_THREAD);
+				
+//				Get the raster of the image
+	        	Raster raster = ip.getRaster();
+	        	
+//	        	Initialize list of threads that that will extract pixels from the image
+	        	List<PixelsExtractionThreadSoA> extractionThreads = new ArrayList<>();
+//				Instantiate the threads passing the parameters
+	        	for (int i = 0; i < N_THREAD; i++) {
+	        		PixelsExtractionThreadSoA extractThread = new PixelsExtractionThreadSoA(i, N_THREAD, raster);
+	        		extractionThreads.add(extractThread);
+	        	}
+		    	
+//	        	Initialize a list to hold the Futures associated with threads that implement Callable
+	        	List<Future<PointsSoA<Double>>> extractionFuturesList = null;
+		    	try {
+//		    		Execute the threads
+		    		extractionFuturesList = executor.invokeAll(extractionThreads);
+				} catch (InterruptedException e) {
+					LOGGER.log(Level.WARNING, e.getMessage(), e);
+					Thread.currentThread().interrupt();
+				}
+		    	
+//		    	Create a PointsSoA object to hold the chunks of LUV points extracted from the image
+		    	PointsSoA<Double> originPoints = new PointsSoA<>();
+		    	
+//		    	Wait for the completion of the threads to get the return value and add it to a list
+//		    	Wait from the last because there may be more work to do in the front threads (they can have one more point in the chunk for them)
+		    	for(int i = extractionFuturesList.size() - 1; i >= 0; i--) {
+		    		try {
+		    			PointsSoA<Double> originPointChunk = extractionFuturesList.get(i).get();
+						originPoints.addAll(0, originPointChunk);
+
+					} catch (InterruptedException|ExecutionException e) {
+						LOGGER.log(Level.WARNING, e.getMessage(), e);
+						Thread.currentThread().interrupt();
+					}
+		    	}
+		    	
+//	        	Initialize list of threads that that will apply the mean shift algorithm
+		    	List<MeanShiftThreadSoA> meanShiftThreads = new ArrayList<>();
+//				Instantiate the threads passing the parameters
+				for (int i = 0; i < N_THREAD; i++) {
+					MeanShiftThreadSoA meanShiftThread = new MeanShiftThreadSoA(i, N_THREAD, ALGORITHM_ITER, BANDWIDTH, originPoints);
+					meanShiftThreads.add(meanShiftThread);
+				}
+				
+//	        	Initialize a list to hold the Futures associated with threads that implement Callable
+				List<Future<PointsSoA<Double>>> algorithmFuturesList = null;
+		    	try {
+//		    		Execute the threads
+		    		algorithmFuturesList = executor.invokeAll(meanShiftThreads);
+				} catch (InterruptedException e) {
+					LOGGER.log(Level.WARNING, e.getMessage(), e);
+					Thread.currentThread().interrupt();
+				}
+		    	
+//		    	Instantiate the object that will hold the final result
+		    	shiftedPoints = new PointsSoA<>();
+		    	
+//		    	Wait for the completion of the threads to get the return value and add it to the object that will hold the final result
+//		    	Wait from the last because there may be more work to do in the front threads (they can have one more point in the chunk for them)
+		    	for(int i = extractionFuturesList.size() - 1; i >= 0; i--) {
+		    		try {
+		    			PointsSoA<Double> shiftedPointChunk = algorithmFuturesList.get(i).get();
+						shiftedPoints.addAll(0, shiftedPointChunk);
+					} catch (InterruptedException|ExecutionException e) {
+						LOGGER.log(Level.WARNING, e.getMessage(), e);
+						Thread.currentThread().interrupt();
+					}
+		    	}
+		    	
+//		    	shutdown the executor
+				executor.shutdown();
+		    	
+//		    	Verify termination of the executor
+				try {
+				    if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+				    	LOGGER.info("Executor timeout up, now forcing the shutdown...");
+				        executor.shutdownNow();
+				    } 
+				} catch (InterruptedException e) {
+					LOGGER.info("Executor shutdown exception, now forcing the shutdown...");
+				    executor.shutdownNow();
+				    Thread.currentThread().interrupt();
+				}
+		
+//	    		render image without create a JPG image
+				ip.renderImageSoAFromLUV(shiftedPoints, N_THREAD);
+		    	
+				Instant end = Instant.now();
+				allTimes += Duration.between(start, end).toMillis();
+				LOGGER.info("End iteration " + (k + 1));
+			}
+			
+			LOGGER.info("Parallel SoA version Callable took " + (allTimes / ITER) + " milliseconds");
+			
+	    	str.append("_Parallel_SoA").append("_").append(N_THREAD).append("-Threads").append("_").append("Callable").append(".jpg");
+
+//	    	Create a JPG image with the shifted points and save it on the given path
+	    	ip.renderImageSoAFromLUV(shiftedPoints, str.toString(), N_THREAD);
+	    	
+//	    	Remove from the string that is used to name the JPG image the part specific to this if statement
+	    	str.delete(defaultStrSize, str.length());
     	}
 	}
 }
