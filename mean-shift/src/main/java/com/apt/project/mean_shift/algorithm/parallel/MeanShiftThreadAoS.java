@@ -17,13 +17,13 @@ public class MeanShiftThreadAoS implements Callable<List<Point<Double>>>{
 	private double kernelDen;
 	private List<Point<Double>> originPoints;
 	
-	public MeanShiftThreadAoS(int tid, int nThreads, int maxIter, double kernelDen,
+	public MeanShiftThreadAoS(int tid, int nThreads, int maxIter, float bandwidth,
 			List<Point<Double>> originPoints) {
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.maxIter = maxIter;
-		this.kernelDen = kernelDen;
 		this.originPoints = originPoints;
+		this.kernelDen = 2 * Math.pow(bandwidth, 2);
 	}
 
 	

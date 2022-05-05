@@ -120,7 +120,7 @@ public class ImageParser {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			Point<Integer> point = points.get(i);
-			int rgb = point.getD1();//	Method that creates an image as a bufferedImage from a list of RGB points
+			int rgb = point.getD1();
 	        rgb = (rgb << 8) + point.getD2();
 	        rgb = (rgb << 8) + point.getD3();
 	        outputImage.setRGB( i % width, i / width, rgb);
@@ -132,11 +132,65 @@ public class ImageParser {
 		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
 		for (int i = 0; i < width*height; i++) {
 			Point<Integer> point = ColorConverter.convertToRGBPoint(points.get(i));
-			int rgb = point.getD1();//	Method that creates an image as a bufferedImage from a list of RGB points
+			int rgb = point.getD1();
 	        rgb = (rgb << 8) + point.getD2();
 	        rgb = (rgb << 8) + point.getD3();
 	        outputImage.setRGB( i % width, i / width, rgb);
 		}
+	}
+	
+	public void renderImageFromLUV(List<Point<Double>> points, int nThreads) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		int numberOfElements = width;
+		int minElementsPerThread = numberOfElements / nThreads;
+		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
+		int maxIndex;
+		int start;
+		for (int i = 0; i < nThreads; i++) {
+			if (i < threadsWithMoreElements) {
+				maxIndex = minElementsPerThread + 1;
+				start = i * maxIndex;
+			}
+			else {
+				maxIndex = minElementsPerThread;
+				start = threadsWithMoreElements * (maxIndex + 1) + (i - threadsWithMoreElements) * maxIndex;
+			}
+			for (int k = 0; k < maxIndex*height; k++) {
+				Point<Integer> point = ColorConverter.convertToRGBPoint(points.get(start*height + k));
+				int rgb = point.getD1();
+		        rgb = (rgb << 8) + point.getD2();
+		        rgb = (rgb << 8) + point.getD3();
+				outputImage.setRGB(start + k % maxIndex, k / maxIndex , rgb);					
+			}
+		}
+	}
+	
+	public void renderImageFromLUV(List<Point<Double>> points, String imageName, int nThreads) {
+		BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); 
+		int numberOfElements = width;
+		int minElementsPerThread = numberOfElements / nThreads;
+		int threadsWithMoreElements = numberOfElements - nThreads * minElementsPerThread;
+		int maxIndex;
+		int start;
+		for (int i = 0; i < nThreads; i++) {
+			if (i < threadsWithMoreElements) {
+				maxIndex = minElementsPerThread + 1;
+				start = i * maxIndex;
+			}
+			else {
+				maxIndex = minElementsPerThread;
+				start = threadsWithMoreElements * (maxIndex + 1) + (i - threadsWithMoreElements) * maxIndex;
+			}
+			for (int k = 0; k < maxIndex*height; k++) {
+				Point<Integer> point = ColorConverter.convertToRGBPoint(points.get(start*height + k));
+				int rgb = point.getD1();
+		        rgb = (rgb << 8) + point.getD2();
+		        rgb = (rgb << 8) + point.getD3();
+				outputImage.setRGB(start + k % maxIndex, k / maxIndex , rgb);					
+			}
+		}
+		
+		write(outputImage, imageName);
 	}
 	
 //	Method to render an image from RGB points stored as a structure of arrays and write it as a JPG image in the path specified.

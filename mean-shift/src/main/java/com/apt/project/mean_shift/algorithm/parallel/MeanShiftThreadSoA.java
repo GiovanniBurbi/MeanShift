@@ -17,13 +17,13 @@ private static final Logger LOGGER = Logger.getLogger(MeanShiftThreadSoA.class.g
 	private PointsSoA<Double> originPointsSoA;
 	
 		
-	public MeanShiftThreadSoA(int tid, int nThreads, int maxIter, double kernelDen, PointsSoA<Double> originPointsSoA) {
+	public MeanShiftThreadSoA(int tid, int nThreads, int maxIter, float bandwidth, PointsSoA<Double> originPointsSoA) {
 		super();
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.maxIter = maxIter;
-		this.kernelDen = kernelDen;
 		this.originPointsSoA = originPointsSoA;
+		this.kernelDen = 2 * Math.pow(bandwidth, 2);
 	}
 	
 	private double euclideanDistancePow2(Double pointX, Double pointY, Double pointZ, Double originX, Double originY, Double originZ) {

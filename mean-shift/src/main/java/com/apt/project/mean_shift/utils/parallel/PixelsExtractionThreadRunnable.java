@@ -8,7 +8,7 @@ import com.apt.project.mean_shift.model.Point;
 import com.apt.project.mean_shift.model.PointsSoA;
 import com.apt.project.mean_shift.utils.ColorConverter;
 
-public class PixelsExtractionThread implements Runnable {
+public class PixelsExtractionThreadRunnable implements Runnable {
 	
 	private int tid;
 	private int nThreads;
@@ -18,7 +18,7 @@ public class PixelsExtractionThread implements Runnable {
 	private Phaser ph;
 	private boolean isAoS;
 	
-	public PixelsExtractionThread(int tid, int nThreads, Raster raster, List<Point<Double>> extractedPoints, Phaser ph) {
+	public PixelsExtractionThreadRunnable(int tid, int nThreads, Raster raster, List<Point<Double>> extractedPoints, Phaser ph) {
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.raster = raster;
@@ -28,7 +28,7 @@ public class PixelsExtractionThread implements Runnable {
 		ph.register();
 	}
 	
-	public PixelsExtractionThread(int tid, int nThreads, Raster raster, PointsSoA<Double> extractedPoints, Phaser ph) {
+	public PixelsExtractionThreadRunnable(int tid, int nThreads, Raster raster, PointsSoA<Double> extractedPoints, Phaser ph) {
 		this.tid = tid;
 		this.nThreads = nThreads;
 		this.raster = raster;
