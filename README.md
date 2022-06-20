@@ -29,7 +29,7 @@ To obtain the results shown in the Final Report has been used a machine with:
 ## Getting started
 ### Using IDE
 * Clone this repository in your IDE. **Eclipse** has been used for this project.
-* Set **flags** in the header of "App.java" to select the implementation of the algorithm that will run.
+* Set **flags** in the header of "App.java" to select the implementation of the algorithm that will be run.
 * To **run the Maven build**
   * Run the root directory of the project as Maven build with goals:
     `clean verify`
