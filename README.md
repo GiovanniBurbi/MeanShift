@@ -7,9 +7,14 @@
 
 ## Brief introduction
 For this project we implemented the **Mean Shift**, a non-parametric clustering algorithm based on kernel-density estimation that has a **quadratic computational complexity**.
+
 We have exploited the **embarrassingly parallel structure** of the algorithm to improve its performance using **Java and its parallel mechanisms**.
+
 We tried to efficiently use the cache using a certain data organization in memory called **Structure of Array** and we showed the difference of using the **Runnable and Callable interfaces** to implement the threads.
+
 To perform the experiments the **mean shift clustering** has been used to perform image processing, more precisely **image segmentation**.
+
+For more details on the development process of the project and the tools used see the [Final Report](https://github.com/GiovanniBurbi/MeanShift/blob/master/Parallel_Computing_Mean_Shift_Clustering.pdf).
 
 <div align="center">
 <div>
@@ -17,9 +22,6 @@ To perform the experiments the **mean shift clustering** has been used to perfor
 <img src="images/result.jpg" width="35%""/>
 </div>
 </div>
-
-                                         
-For more details on the development process of the project and the tools used see the [Final Report]().
             
 
 ## Experiments setup
